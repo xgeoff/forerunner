@@ -102,6 +102,11 @@ class WorkflowEngine<C>(
 )
 ```
 
+`C` is the workflow context type. It is the same type passed into nodes and returned through `NodeOutcome` and `ExecutionResult`.
+
+Example:
+- If your context is `PolicyCtx`, use `Workflow<PolicyCtx>` and `WorkflowEngine<PolicyCtx>`.
+
 ---
 
 ## `EngineConfig`
@@ -113,6 +118,25 @@ class WorkflowEngine<C>(
   Safety guard against infinite loops (default `10_000`).
 
 Fail-fast detection is optimized internally to avoid repeated violation scanning.
+
+Configure the engine by passing `EngineConfig` as the second constructor argument:
+
+```kotlin
+val engine = WorkflowEngine(
+    workflow,
+    EngineConfig(
+        failFastOnError = true,
+        maxSteps = 5_000
+    )
+)
+```
+
+Java example:
+
+```java
+EngineConfig cfg = new EngineConfig(true, 5_000);
+WorkflowEngine<MyCtx> engine = new WorkflowEngine<>(workflow, cfg);
+```
 
 ---
 
