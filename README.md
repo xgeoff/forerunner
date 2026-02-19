@@ -24,8 +24,7 @@ No runtime dependencies beyond Kotlin.
 A workflow step that receives a context and returns a `NodeOutcome<C>`.
 
 ```kotlin
-interface Node<C> {
-    val id: String
+fun interface Node<C> {
     fun execute(context: C): NodeOutcome<C>
 }
 ```
@@ -57,6 +56,30 @@ Defines a directed graph:
 - `startNodeId` — entry node
 - `nodes` — map of id → node
 - `continueTo` — routing for `Continue`
+
+Java-friendly constructor is also available:
+
+```kotlin
+Workflow(startNodeId, nodes)
+```
+
+---
+
+## Java Compatibility
+
+- `Node` is a functional interface.
+- `NodeOutcome` exposes `@JvmStatic` factory methods.
+- `Workflow` includes a Java-friendly constructor overload.
+
+```java
+Workflow<MyCtx> wf = new Workflow<>(
+    "start",
+    Map.of(
+        "start", ctx -> NodeOutcome.next(ctx, "end"),
+        "end", ctx -> NodeOutcome.stop(ctx)
+    )
+);
+```
 
 ---
 
@@ -123,31 +146,15 @@ import biz.digitalindustry.workflow.engine.WorkflowEngine
 
 data class IntContext(val value: Int)
 
-class AddTenNode : Node<IntContext> {
-    override val id = "addTen"
-
-    override fun execute(context: IntContext): NodeOutcome<IntContext> {
-        return NodeOutcome.Continue(
-            context.copy(value = context.value + 10)
-        )
-    }
-}
-
-class MultiplyByTwoNode : Node<IntContext> {
-    override val id = "multiplyByTwo"
-
-    override fun execute(context: IntContext): NodeOutcome<IntContext> {
-        return NodeOutcome.Stop(
-            context.copy(value = context.value * 2)
-        )
-    }
-}
-
 val workflow = Workflow(
     startNodeId = "addTen",
     nodes = mapOf(
-        "addTen" to AddTenNode(),
-        "multiplyByTwo" to MultiplyByTwoNode()
+        "addTen" to Node { ctx: IntContext ->
+            NodeOutcome.continueWith(ctx.copy(value = ctx.value + 10))
+        },
+        "multiplyByTwo" to Node { ctx: IntContext ->
+            NodeOutcome.stop(ctx.copy(value = ctx.value * 2))
+        }
     ),
     continueTo = mapOf("addTen" to "multiplyByTwo")
 )
@@ -197,41 +204,41 @@ val workflow = Workflow(
 
         "underwrite" to Node { ctx: PolicyCtx ->
             if (ctx.requiresRiskReview)
-                NodeOutcome.Next(ctx, "riskCheck")
+                NodeOutcome.next(ctx, "riskCheck")
             else
-                NodeOutcome.Next(ctx, "eligibilityCheck")
+                NodeOutcome.next(ctx, "eligibilityCheck")
         },
 
         "price" to Node { ctx ->
             when {
                 ctx.isHighRisk ->
-                    NodeOutcome.Next(ctx, "highRiskSurcharge")
+                    NodeOutcome.next(ctx, "highRiskSurcharge")
 
                 ctx.isLoyalCustomer ->
-                    NodeOutcome.Next(ctx, "loyaltyDiscount")
+                    NodeOutcome.next(ctx, "loyaltyDiscount")
 
                 else ->
-                    NodeOutcome.Continue(ctx)
+                    NodeOutcome.continueWith(ctx)
             }
         },
 
         "issue" to Node { ctx ->
-            NodeOutcome.Stop(ctx.copy(status = "ISSUED"))
+            NodeOutcome.stop(ctx.copy(status = "ISSUED"))
         },
 
-        "riskCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
-        "fraudCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
-        "creditCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
+        "riskCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
+        "fraudCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
+        "creditCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
 
-        "eligibilityCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
-        "ageCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
+        "eligibilityCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
+        "ageCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
 
         "loyaltyDiscount" to Node { ctx ->
-            NodeOutcome.Continue(ctx.copy(premium = ctx.premium * 0.9))
+            NodeOutcome.continueWith(ctx.copy(premium = ctx.premium * 0.9))
         },
 
         "highRiskSurcharge" to Node { ctx ->
-            NodeOutcome.Continue(ctx.copy(premium = ctx.premium * 1.2))
+            NodeOutcome.continueWith(ctx.copy(premium = ctx.premium * 1.2))
         }
     ),
 
@@ -258,7 +265,7 @@ In this model:
 
 - Nodes define behavior only.
 - `continueTo` defines fallback routing for `Continue`.
-- `NodeOutcome.Next(...)` performs runtime branching.
+- `NodeOutcome.next(...)` performs runtime branching.
 - Complex nested flows are expressed purely as graph structure.
 
 ---
@@ -283,11 +290,11 @@ data class IntContext(val value: Int)
 
 val flow = FlowBuilder.start<IntContext>("addTen")
     .node("addTen") { ctx ->
-        NodeOutcome.Continue(ctx.copy(value = ctx.value + 10))
+        NodeOutcome.continueWith(ctx.copy(value = ctx.value + 10))
     }
     .then("multiplyByTwo")
     .node("multiplyByTwo") { ctx ->
-        NodeOutcome.Stop(ctx.copy(value = ctx.value * 2))
+        NodeOutcome.stop(ctx.copy(value = ctx.value * 2))
     }
     .build()
 ```
@@ -298,7 +305,7 @@ val flow = FlowBuilder.start<IntContext>("addTen")
 
 ## Branching Graph with Default Edge + Runtime Next
 
-Use `.then()` to define default continue routing for `Continue`, and `NodeOutcome.Next(...)` for runtime branching.
+Use `.then()` to define default continue routing for `Continue`, and `NodeOutcome.next(...)` for runtime branching.
 
 Example: a validation step that may branch at runtime, but still has defined default continue routing.
 
@@ -324,27 +331,27 @@ val flow = FlowBuilder.start<RiskContext>("validate")
         ctx.path.add("validate")
 
         if (ctx.score > 80)
-            NodeOutcome.Next(ctx, "highRisk")   // runtime branch
+            NodeOutcome.next(ctx, "highRisk")   // runtime branch
         else
-            NodeOutcome.Continue(ctx)           // fallback
+            NodeOutcome.continueWith(ctx)           // fallback
     }
     .then("standard")   // default continue routing for Continue
 
     .node("highRisk") { ctx ->
         ctx.path.add("highRisk")
-        NodeOutcome.Continue(ctx)
+        NodeOutcome.continueWith(ctx)
     }
     .then("finalize")
 
     .node("standard") { ctx ->
         ctx.path.add("standard")
-        NodeOutcome.Continue(ctx)
+        NodeOutcome.continueWith(ctx)
     }
     .then("finalize")
 
     .node("finalize") { ctx ->
         ctx.path.add("finalize")
-        NodeOutcome.Stop(ctx)
+        NodeOutcome.stop(ctx)
     }
 
     .build()
@@ -353,13 +360,13 @@ val flow = FlowBuilder.start<RiskContext>("validate")
 In this example:
 
 - `.then("standard")` defines default continue routing for `Continue`.
-- `NodeOutcome.Next(...)` performs runtime branching and can override that default at execution time.
+- `NodeOutcome.next(...)` performs runtime branching and can override that default at execution time.
 - `.then("finalize")` expresses simple sequential routing.
 
 ---
 
 `.then()` defines default continue routing for `Continue`.  
-Dynamic jumps are performed via `NodeOutcome.Next(...)`.
+Dynamic jumps are performed via `NodeOutcome.next(...)`.
 
 ---
 
