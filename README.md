@@ -13,7 +13,7 @@ It is designed around:
 
 No frameworks.  
 No reflection.  
-No runtime dependencies beyond Kotlin.
+No external runtime dependencies beyond the JVM and Kotlin standard library.
 
 License: [MIT](LICENSE)
 
