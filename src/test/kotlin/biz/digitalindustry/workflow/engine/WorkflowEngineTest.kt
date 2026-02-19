@@ -37,7 +37,7 @@ class WorkflowEngineTest {
         }
 
         val workflow = Workflow(
-            startNodeId = "A",
+            startNode = "A",
             nodes = mapOf("A" to nodeA, "B" to nodeB, "C" to nodeC),
             continueTo = mapOf("A" to "B")
         )
@@ -63,7 +63,7 @@ class WorkflowEngineTest {
         }
 
         val workflow = Workflow(
-            startNodeId = "A",
+            startNode = "A",
             nodes = mapOf("A" to nodeA, "B" to nodeB),
             continueTo = mapOf("A" to "B")
         )
@@ -82,7 +82,7 @@ class WorkflowEngineTest {
     @Test
     fun missingNodeReturnsFatal() {
         val workflow = Workflow<String>(
-            startNodeId = "missing",
+            startNode = "missing",
             nodes = emptyMap()
         )
 
@@ -99,7 +99,7 @@ class WorkflowEngineTest {
         }
 
         val workflow = Workflow(
-            startNodeId = "A",
+            startNode = "A",
             nodes = mapOf("A" to loopNode),
             continueTo = mapOf("A" to "A")
         )

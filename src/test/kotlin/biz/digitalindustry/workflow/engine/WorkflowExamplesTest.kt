@@ -16,7 +16,7 @@ class WorkflowExamplesTest {
     @Test
     fun linearTransformation_objectBased() {
         val workflow = Workflow(
-            startNodeId = "addTen",
+            startNode = "addTen",
             nodes = mapOf(
                 "addTen" to Node<IntContext> { ctx ->
                     NodeOutcome.Continue(ctx.copy(value = ctx.value + 10))
@@ -54,7 +54,7 @@ class WorkflowExamplesTest {
     @Test
     fun branchingValidation_objectBased() {
         val workflow = Workflow(
-            startNodeId = "validateAge",
+            startNode = "validateAge",
             nodes = mapOf(
                 "validateAge" to Node<UserContext> { context ->
                     if (context.age < 18) {
@@ -105,7 +105,7 @@ class WorkflowExamplesTest {
     @Test
     fun mixedRoutingAndAccumulation_objectBased() {
         val workflow = Workflow(
-            startNodeId = "validateTotal",
+            startNode = "validateTotal",
             nodes = mapOf(
                 "validateTotal" to Node<OrderContext> { context ->
                     if (context.total <= 0) {
@@ -210,12 +210,12 @@ private data class OrderContext(
 )
 
 private class WorkflowBuilder<C> {
-    private var startNodeId: String? = null
+    private var startNode: String? = null
     private val nodes = mutableMapOf<String, Node<C>>()
     private val continueTo = mutableMapOf<String, String>()
 
     fun start(id: String) {
-        startNodeId = id
+        startNode = id
     }
 
     fun node(id: String, block: (C) -> NodeOutcome<C>) {
@@ -228,7 +228,7 @@ private class WorkflowBuilder<C> {
 
     fun build(): Workflow<C> {
         return Workflow(
-            startNodeId = requireNotNull(startNodeId),
+            startNode = requireNotNull(startNode),
             nodes = nodes,
             continueTo = continueTo
         )

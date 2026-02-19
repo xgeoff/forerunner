@@ -13,7 +13,7 @@ class WorkflowEngine<C>(
 
     fun execute(initialContext: C): ExecutionResult<C> {
         var currentContext = initialContext
-        var currentNodeId = workflow.startNodeId
+        var currentNodeId = workflow.startNode
         val violations = mutableListOf<Violation>()
         var hasError = false
         var steps = 0

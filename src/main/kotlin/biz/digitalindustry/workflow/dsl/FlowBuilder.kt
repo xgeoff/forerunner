@@ -5,11 +5,11 @@ import biz.digitalindustry.workflow.core.NodeOutcome
 import biz.digitalindustry.workflow.core.Workflow
 
 class FlowBuilder<C> private constructor(
-    private val startNodeId: String
+    private val startNode: String
 ) {
     companion object {
-        fun <C> start(startNodeId: String): FlowBuilder<C> =
-            FlowBuilder(startNodeId)
+        fun <C> start(startNode: String): FlowBuilder<C> =
+            FlowBuilder(startNode)
     }
 
     private val nodes = mutableMapOf<String, Node<C>>()
@@ -42,8 +42,8 @@ class FlowBuilder<C> private constructor(
     }
 
     fun build(): Workflow<C> {
-        if (!nodes.containsKey(startNodeId)) {
-            throw IllegalStateException("Start node not found: $startNodeId")
+        if (!nodes.containsKey(startNode)) {
+            throw IllegalStateException("Start node not found: $startNode")
         }
 
         val missingTargets = continueTo.values.filterNot(nodes::containsKey).distinct()
@@ -52,7 +52,7 @@ class FlowBuilder<C> private constructor(
         }
 
         return Workflow(
-            startNodeId = startNodeId,
+            startNode = startNode,
             nodes = nodes.toMap(),
             continueTo = continueTo.toMap()
         )

@@ -16,7 +16,7 @@ class WorkflowEngineFailFastOptimizationTest {
         data class Ctx(val visited: MutableList<String> = mutableListOf())
 
         val flow = Workflow(
-            startNodeId = "first",
+            startNode = "first",
             nodes = mapOf(
                 "first" to Node<Ctx> { ctx ->
                     ctx.visited.add("first")

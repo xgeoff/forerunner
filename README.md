@@ -53,14 +53,20 @@ A node may return:
 
 Defines a directed graph:
 
-- `startNodeId` — entry node
+- `startNode` — entry node
 - `nodes` — map of id → node
 - `continueTo` — routing for `Continue`
+
+### Starting Node
+
+Each workflow defines a `startNode`, which is the unique identifier of the first node to execute.
+
+Nodes are identified by a unique string key within the workflow. The `startNode` must match one of those node identifiers.
 
 Java-friendly constructor is also available:
 
 ```kotlin
-Workflow(startNodeId, nodes)
+Workflow(startNode, nodes)
 ```
 
 ---
@@ -149,7 +155,7 @@ import biz.digitalindustry.workflow.engine.WorkflowEngine
 data class IntContext(val value: Int)
 
 val workflow = Workflow(
-    startNodeId = "addTen",
+    startNode = "addTen",
     nodes = mapOf(
         "addTen" to Node { ctx: IntContext ->
             NodeOutcome.continueWith(ctx.copy(value = ctx.value + 10))
@@ -200,7 +206,7 @@ data class PolicyCtx(
 )
 
 val workflow = Workflow(
-    startNodeId = "underwrite",
+    startNode = "underwrite",
 
     nodes = mapOf(
 
@@ -543,8 +549,6 @@ else if (result instanceof ExecutionResult.Fatal<IntContext> fatal) {
 
 Forerunner is intentionally designed to be JVM-first and usable from Kotlin, Java, or any other JVM language.
 
-Here is a clean section you can paste directly into your `README.md`.
-
 ---
 
 ## Thread Safety
@@ -598,4 +602,3 @@ Thread safety refers to concurrent executions, not parallel node processing with
 ---
 
 Forerunner is intentionally designed as a deterministic, stateless state machine engine suitable for use in high-concurrency server environments.
-
