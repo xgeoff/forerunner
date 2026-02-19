@@ -626,11 +626,18 @@ Forerunner is intentionally designed to be JVM-first and usable from Kotlin, Jav
 
 Forerunner is designed to be thread-safe and reentrant.
 
-### What This Means
+### Thread Safety and Concurrency
 
-- A single `Workflow` instance can be shared safely across threads.
-- A single `WorkflowEngine` instance can execute multiple workflows concurrently.
-- Multiple threads can call `engine.execute(context)` at the same time without synchronization.
+A single `Workflow` instance can be shared safely across threads.
+
+A `WorkflowEngine` instance is bound to a single `Workflow` definition.
+It cannot execute multiple different workflow types.
+
+However, a single `WorkflowEngine` instance can execute its configured
+workflow concurrently across multiple threads.
+
+Multiple threads may safely call `engine.execute(context)` at the same
+time without synchronization.
 
 This is possible because:
 
