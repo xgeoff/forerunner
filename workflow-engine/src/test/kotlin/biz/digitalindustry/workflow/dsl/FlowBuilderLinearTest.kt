@@ -1,21 +1,23 @@
 package biz.digitalindustry.workflow.dsl
 
+import biz.digitalindustry.workflow.core.NodeOutcome
 import biz.digitalindustry.workflow.engine.ExecutionResult
 import biz.digitalindustry.workflow.engine.WorkflowEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class DslLinearFlowTest {
+class FlowBuilderLinearTest {
 
     private data class IntContext(val value: Int)
 
     @Test
-    fun linearFlowTransformsValue() {
-        val flow = workflow<IntContext>(start = "addTen") {
-            node("addTen") { ctx -> Continue(ctx.copy(value = ctx.value + 10)) } then "multiplyByTwo"
-            node("multiplyByTwo") { ctx -> Stop(ctx.copy(value = ctx.value * 2)) }
-        }
+    fun linearFlowWithThenProducesExpectedResult() {
+        val flow = FlowBuilder.start<IntContext>("addTen")
+            .node("addTen") { ctx -> NodeOutcome.Continue(ctx.copy(value = ctx.value + 10)) }
+            .then("multiplyByTwo")
+            .node("multiplyByTwo") { ctx -> NodeOutcome.Stop(ctx.copy(value = ctx.value * 2)) }
+            .build()
 
         val result = WorkflowEngine(flow).execute(IntContext(5))
 

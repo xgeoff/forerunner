@@ -110,30 +110,33 @@ val result = WorkflowEngine(workflow).execute(IntContext(5))
 // Completed with context.value == 30
 ```
 
-### DSL Construction (`workflow {}`)
+### Fluent `FlowBuilder` Construction
 
 ```kotlin
-import biz.digitalindustry.workflow.dsl.Continue
-import biz.digitalindustry.workflow.dsl.Stop
-import biz.digitalindustry.workflow.dsl.workflow
+import biz.digitalindustry.workflow.core.NodeOutcome
+import biz.digitalindustry.workflow.dsl.FlowBuilder
 
 data class IntContext(val value: Int)
 
-val flow = workflow<IntContext>(start = "addTen") {
-    node("addTen") { ctx ->
-        Continue(ctx.copy(value = ctx.value + 10))
-    } then "multiplyByTwo"
-
-    node("multiplyByTwo") { ctx ->
-        Stop(ctx.copy(value = ctx.value * 2))
+val flow = FlowBuilder.start<IntContext>("addTen")
+    .node("addTen") { ctx ->
+        NodeOutcome.Continue(ctx.copy(value = ctx.value + 10))
     }
-}
+    .then("multiplyByTwo")
+    .node("multiplyByTwo") { ctx ->
+        NodeOutcome.Stop(ctx.copy(value = ctx.value * 2))
+    }
+    .build()
 ```
 
-Chained routing is supported:
+`next(...)` has the same behavior as `then(...)` and can be used when that name reads better:
 
 ```kotlin
-node("a") { ctx -> Continue(ctx) } then "b" then "c"
+val flow = FlowBuilder.start<IntContext>("start")
+    .node("start") { ctx -> NodeOutcome.Continue(ctx) }
+    .next("end")
+    .node("end") { ctx -> NodeOutcome.Stop(ctx) }
+    .build()
 ```
 
 ## Canonical Examples in Tests
@@ -146,7 +149,7 @@ Includes:
 - Branching validation flow
 - Mixed routing + validation accumulation
 
-Each example is validated in both object-based and DSL form.
+Each example is validated in both object-based and fluent-construction form.
 
 ## Build and Test
 
