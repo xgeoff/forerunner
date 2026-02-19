@@ -54,7 +54,7 @@ class WorkflowEngine<C>(
                     }
 
                     currentContext = outcome.context
-                    val defaultNext = workflow.defaultEdges[currentNodeId]
+                    val defaultNext = workflow.continueTo[currentNodeId]
                         ?: return ExecutionResult.Completed(currentContext, violations.toList())
                     currentNodeId = defaultNext
                 }

@@ -13,7 +13,7 @@ class FlowBuilder<C> private constructor(
     }
 
     private val nodes = mutableMapOf<String, Node<C>>()
-    private val edges = mutableMapOf<String, String>()
+    private val continueTo = mutableMapOf<String, String>()
     private var lastDefinedNodeId: String? = null
 
     fun node(
@@ -39,11 +39,11 @@ class FlowBuilder<C> private constructor(
         val from = requireNotNull(lastDefinedNodeId) {
             "No previously defined node to connect from"
         }
-        if (edges.containsKey(from)) {
+        if (continueTo.containsKey(from)) {
             throw IllegalStateException("Default edge already defined from node: $from")
         }
 
-        edges[from] = nextId
+        continueTo[from] = nextId
         return this
     }
 
@@ -52,7 +52,7 @@ class FlowBuilder<C> private constructor(
             throw IllegalStateException("Start node not found: $startNodeId")
         }
 
-        val missingTargets = edges.values.filterNot(nodes::containsKey).distinct()
+        val missingTargets = continueTo.values.filterNot(nodes::containsKey).distinct()
         if (missingTargets.isNotEmpty()) {
             throw IllegalStateException("Edge target node(s) not found: ${missingTargets.joinToString(", ")}")
         }
@@ -60,7 +60,7 @@ class FlowBuilder<C> private constructor(
         return Workflow(
             startNodeId = startNodeId,
             nodes = nodes.toMap(),
-            defaultEdges = edges.toMap()
+            continueTo = continueTo.toMap()
         )
     }
 }

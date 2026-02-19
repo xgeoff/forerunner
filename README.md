@@ -37,7 +37,7 @@ interface Node<C> {
 A node may return:
 
 - `Continue(context, violations)`  
-  Continue using the default edge from the current node.
+  Continue using default continue routing from the current node.
 
 - `Next(context, nextNodeId, violations)`  
   Jump directly to a specific node.
@@ -56,7 +56,7 @@ Defines a directed graph:
 
 - `startNodeId` — entry node
 - `nodes` — map of id → node
-- `defaultEdges` — routing for `Continue`
+- `continueTo` — routing for `Continue`
 
 ---
 
@@ -104,10 +104,10 @@ For each step:
 |-----------|----------|
 | `Fatal`   | Return fatal result |
 | `Stop`    | Append violations and return `Completed` |
-| `Continue`| Append violations, optional fail-fast check, route via default edge |
+| `Continue`| Append violations, optional fail-fast check, route via `continueTo` |
 | `Next`    | Append violations, optional fail-fast check, route to explicit node |
 
-If `Continue` has no default edge, execution ends as `Completed`.
+If `Continue` has no `continueTo` mapping, execution ends as `Completed`.
 
 ---
 
@@ -149,7 +149,7 @@ val workflow = Workflow(
         "addTen" to AddTenNode(),
         "multiplyByTwo" to MultiplyByTwoNode()
     ),
-    defaultEdges = mapOf("addTen" to "multiplyByTwo")
+    continueTo = mapOf("addTen" to "multiplyByTwo")
 )
 
 val result = WorkflowEngine(workflow)
@@ -157,6 +157,109 @@ val result = WorkflowEngine(workflow)
 
 // Completed with context.value == 30
 ```
+
+## Complex Graph Example (Object Model)
+
+Forerunner workflows are directed graphs. Nested or hierarchical behavior is modeled through routing — not parent/child objects.
+
+Example: multi-stage underwriting flow with nested validation branches.
+
+### Graph Shape
+
+```
+underwrite
+   ├── riskCheck
+   │       ├── fraudCheck
+   │       └── creditCheck
+   └── eligibilityCheck
+           └── ageCheck
+→ price
+   ├── loyaltyDiscount
+   └── highRiskSurcharge
+→ issue
+```
+
+### Implementation
+
+```kotlin
+data class PolicyCtx(
+    val requiresRiskReview: Boolean,
+    val isHighRisk: Boolean,
+    val isLoyalCustomer: Boolean,
+    val premium: Double,
+    val status: String = "PENDING"
+)
+
+val workflow = Workflow(
+    startNodeId = "underwrite",
+
+    nodes = mapOf(
+
+        "underwrite" to Node { ctx: PolicyCtx ->
+            if (ctx.requiresRiskReview)
+                NodeOutcome.Next(ctx, "riskCheck")
+            else
+                NodeOutcome.Next(ctx, "eligibilityCheck")
+        },
+
+        "price" to Node { ctx ->
+            when {
+                ctx.isHighRisk ->
+                    NodeOutcome.Next(ctx, "highRiskSurcharge")
+
+                ctx.isLoyalCustomer ->
+                    NodeOutcome.Next(ctx, "loyaltyDiscount")
+
+                else ->
+                    NodeOutcome.Continue(ctx)
+            }
+        },
+
+        "issue" to Node { ctx ->
+            NodeOutcome.Stop(ctx.copy(status = "ISSUED"))
+        },
+
+        "riskCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
+        "fraudCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
+        "creditCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
+
+        "eligibilityCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
+        "ageCheck" to Node { ctx -> NodeOutcome.Continue(ctx) },
+
+        "loyaltyDiscount" to Node { ctx ->
+            NodeOutcome.Continue(ctx.copy(premium = ctx.premium * 0.9))
+        },
+
+        "highRiskSurcharge" to Node { ctx ->
+            NodeOutcome.Continue(ctx.copy(premium = ctx.premium * 1.2))
+        }
+    ),
+
+    continueTo = mapOf(
+
+        // Underwriting branch
+        "riskCheck" to "fraudCheck",
+        "fraudCheck" to "creditCheck",
+        "creditCheck" to "price",
+
+        "eligibilityCheck" to "ageCheck",
+        "ageCheck" to "price",
+
+        // Pricing branch
+        "loyaltyDiscount" to "issue",
+        "highRiskSurcharge" to "issue",
+
+        "price" to "issue"
+    )
+)
+```
+
+In this model:
+
+- Nodes define behavior only.
+- `continueTo` defines fallback routing for `Continue`.
+- `NodeOutcome.Next(...)` performs runtime branching.
+- Complex nested flows are expressed purely as graph structure.
 
 ---
 
@@ -195,9 +298,9 @@ val flow = FlowBuilder.start<IntContext>("addTen")
 
 ## Branching Graph with Default Edge + Runtime Next
 
-Use `.then()` to define the default edge for `Continue`, and `NodeOutcome.Next(...)` for runtime branching.
+Use `.then()` to define default continue routing for `Continue`, and `NodeOutcome.Next(...)` for runtime branching.
 
-Example: a validation step that may branch at runtime, but still has a defined default route.
+Example: a validation step that may branch at runtime, but still has defined default continue routing.
 
 ### Graph
 
@@ -225,7 +328,7 @@ val flow = FlowBuilder.start<RiskContext>("validate")
         else
             NodeOutcome.Continue(ctx)           // fallback
     }
-    .then("standard")   // default edge for Continue
+    .then("standard")   // default continue routing for Continue
 
     .node("highRisk") { ctx ->
         ctx.path.add("highRisk")
@@ -249,13 +352,13 @@ val flow = FlowBuilder.start<RiskContext>("validate")
 
 In this example:
 
-- `.then("standard")` defines the default edge for `Continue`.
+- `.then("standard")` defines default continue routing for `Continue`.
 - `NodeOutcome.Next(...)` performs runtime branching and can override that default at execution time.
 - `.then("finalize")` expresses simple sequential routing.
 
 ---
 
-`.then()` defines default routing for `Continue`.  
+`.then()` defines default continue routing for `Continue`.  
 Dynamic jumps are performed via `NodeOutcome.Next(...)`.
 
 ---
@@ -294,7 +397,7 @@ From project root:
 - Domain-agnostic
 - Deterministic execution
 - Immutable context model
-- Single default edge per node
+- Single default continue routing edge per node
 - No external runtime dependencies
 - No framework coupling
 - Fluent builder is optional — core engine remains independent

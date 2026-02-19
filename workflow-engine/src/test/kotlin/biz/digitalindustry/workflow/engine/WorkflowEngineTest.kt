@@ -51,7 +51,7 @@ class WorkflowEngineTest {
         val workflow = Workflow(
             startNodeId = "A",
             nodes = mapOf("A" to nodeA, "B" to nodeB, "C" to nodeC),
-            defaultEdges = mapOf("A" to "B")
+            continueTo = mapOf("A" to "B")
         )
 
         val result = WorkflowEngine(workflow).execute("ctx")
@@ -85,7 +85,7 @@ class WorkflowEngineTest {
         val workflow = Workflow(
             startNodeId = "A",
             nodes = mapOf("A" to nodeA, "B" to nodeB),
-            defaultEdges = mapOf("A" to "B")
+            continueTo = mapOf("A" to "B")
         )
 
         val result = WorkflowEngine(
@@ -125,7 +125,7 @@ class WorkflowEngineTest {
         val workflow = Workflow(
             startNodeId = "A",
             nodes = mapOf("A" to loopNode),
-            defaultEdges = mapOf("A" to "A")
+            continueTo = mapOf("A" to "A")
         )
 
         val result = WorkflowEngine(

@@ -21,7 +21,7 @@ class WorkflowExamplesTest {
                 "addTen" to AddTenNode(),
                 "multiplyByTwo" to MultiplyByTwoNode()
             ),
-            defaultEdges = mapOf("addTen" to "multiplyByTwo")
+            continueTo = mapOf("addTen" to "multiplyByTwo")
         )
 
         val result = WorkflowEngine(workflow).execute(IntContext(5))
@@ -102,7 +102,7 @@ class WorkflowExamplesTest {
                 "discount" to DiscountNode(),
                 "finalize" to FinalizeNode()
             ),
-            defaultEdges = mapOf(
+            continueTo = mapOf(
                 "validateTotal" to "discount",
                 "discount" to "finalize"
             )
@@ -211,7 +211,7 @@ private class WorkflowBuilder<C> {
         return Workflow(
             startNodeId = requireNotNull(startNodeId),
             nodes = nodes,
-            defaultEdges = edges
+            continueTo = edges
         )
     }
 }
