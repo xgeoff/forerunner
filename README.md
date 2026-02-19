@@ -404,6 +404,53 @@ Dynamic jumps are performed via `NodeOutcome.next(...)`.
 
 ---
 
+## Defining Reusable Workflows
+
+Workflows are simple value definitions and do not require inheritance. 
+Instead of subclassing `Workflow`, define reusable workflows using 
+composition. This keeps workflows immutable, thread-safe, and easy to test.
+
+```java
+public final class UnderwritingWorkflows {
+
+    private UnderwritingWorkflows() {
+        // prevent instantiation
+    }
+
+    public static Workflow<Policy> defaultWorkflow() {
+        return new Workflow<>(
+            "underwrite",
+            Map.of(
+                "underwrite", new UnderwriteRule(),
+                "fraudcheck", new FraudCheck()
+            )
+        );
+    }
+}
+```
+
+```java
+public class UnderwriteRule implements Node<Policy> {
+
+    @Override
+    public NodeOutcome<Policy> execute(Policy context) {
+        if (context.getScore() < 600) {
+            return NodeOutcome.stop(
+                context,
+                List.of(Violation.error("UW_LOW_SCORE", "Score below threshold"))
+            );
+        }
+        return NodeOutcome.next(context, "fraudcheck");
+    }
+}
+```
+
+Because `Workflow` is a Kotlin data class (and therefore final), 
+it is not designed for inheritance. Workflows are intended to be 
+defined via composition rather than subclassing.
+
+---
+
 # Canonical Test Scenarios
 
 Complex graph examples are implemented under:
