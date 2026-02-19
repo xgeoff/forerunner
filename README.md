@@ -490,8 +490,6 @@ From project root:
 - No framework coupling
 - Fluent builder is optional — core engine remains independent
 
-Here is a clean section you can copy directly into your `README.md`.
-
 ---
 
 ## Using Forerunner from Java
