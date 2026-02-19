@@ -15,6 +15,8 @@ No frameworks.
 No reflection.  
 No runtime dependencies beyond Kotlin.
 
+License: [MIT](LICENSE)
+
 ---
 
 # Core Concepts
