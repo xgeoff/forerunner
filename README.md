@@ -104,6 +104,8 @@ class WorkflowEngine<C>(
 - `maxSteps`  
   Safety guard against infinite loops (default `10_000`).
 
+Fail-fast detection is optimized internally to avoid repeated violation scanning.
+
 ---
 
 ## `ExecutionResult<C>`
@@ -408,3 +410,192 @@ From project root:
 - No external runtime dependencies
 - No framework coupling
 - Fluent builder is optional — core engine remains independent
+
+Here is a clean section you can copy directly into your `README.md`.
+
+---
+
+## Using Forerunner from Java
+
+Forerunner is fully JVM-compatible and can be used cleanly from Java.
+The core API avoids Kotlin-specific constructs and provides Java-friendly factory methods.
+
+---
+
+### Object-Based Construction (Java)
+
+Because `Node` is a functional interface and `NodeOutcome` exposes static factories, Java usage is straightforward.
+
+```java
+import biz.digitalindustry.workflow.core.Node;
+import biz.digitalindustry.workflow.core.NodeOutcome;
+import biz.digitalindustry.workflow.core.Workflow;
+import biz.digitalindustry.workflow.engine.WorkflowEngine;
+
+import java.util.Map;
+
+class IntContext {
+    final int value;
+
+    IntContext(int value) {
+        this.value = value;
+    }
+
+    IntContext withValue(int newValue) {
+        return new IntContext(newValue);
+    }
+}
+
+Workflow<IntContext> workflow =
+    new Workflow<>(
+        "addTen",
+        Map.of(
+            "addTen", (Node<IntContext>) ctx ->
+                NodeOutcome.continueWith(ctx.withValue(ctx.value + 10)),
+
+            "multiplyByTwo", ctx ->
+                NodeOutcome.stop(ctx.withValue(ctx.value * 2))
+        ),
+        Map.of(
+            "addTen", "multiplyByTwo"
+        )
+    );
+
+WorkflowEngine<IntContext> engine =
+    new WorkflowEngine<>(workflow);
+
+var result = engine.execute(new IntContext(5));
+````
+
+---
+
+### Fluent `FlowBuilder` Construction (Java)
+
+The fluent builder also works from Java.
+
+```java
+import biz.digitalindustry.workflow.dsl.FlowBuilder;
+
+Workflow<IntContext> workflow =
+    FlowBuilder.<IntContext>start("addTen")
+        .node("addTen", ctx ->
+            NodeOutcome.continueWith(ctx.withValue(ctx.value + 10))
+        )
+        .then("multiplyByTwo")
+        .node("multiplyByTwo", ctx ->
+            NodeOutcome.stop(ctx.withValue(ctx.value * 2))
+        )
+        .build();
+```
+
+---
+
+### Using Violations from Java
+
+`Violation` provides static helpers for clarity:
+
+```java
+import biz.digitalindustry.workflow.model.Violation;
+
+Violation error = Violation.error("POL001", "Invalid age");
+Violation warning = Violation.warning("POL002", "Premium unusually low");
+```
+
+Nodes can return violations like this:
+
+```java
+NodeOutcome.continueWith(ctx, List.of(
+    Violation.error("POL001", "Invalid age")
+));
+```
+
+---
+
+### Handling Results in Java
+
+Since `ExecutionResult` is a sealed class, Java uses `instanceof`:
+
+```java
+var result = engine.execute(context);
+
+if (result instanceof ExecutionResult.Completed<IntContext> completed) {
+    IntContext finalCtx = completed.getContext();
+}
+
+else if (result instanceof ExecutionResult.ValidationFailed<IntContext> failed) {
+    var violations = failed.getViolations();
+}
+
+else if (result instanceof ExecutionResult.Fatal<IntContext> fatal) {
+    Throwable error = fatal.getError();
+}
+```
+
+---
+
+### Design Notes
+
+* `Node` is a Java-compatible functional interface.
+* `NodeOutcome` exposes static factory methods (`continueWith`, `next`, `stop`, `fatal`).
+* `Workflow` provides constructor overloads for clean Java usage.
+* `EngineConfig` has a no-argument constructor.
+* No Kotlin DSL is required to use the engine.
+
+Forerunner is intentionally designed to be JVM-first and usable from Kotlin, Java, or any other JVM language.
+
+Here is a clean section you can paste directly into your `README.md`.
+
+---
+
+## Thread Safety
+
+Forerunner is designed to be thread-safe and reentrant.
+
+### What This Means
+
+- A single `Workflow` instance can be shared safely across threads.
+- A single `WorkflowEngine` instance can execute multiple workflows concurrently.
+- Multiple threads can call `engine.execute(context)` at the same time without synchronization.
+
+This is possible because:
+
+- `Workflow` is immutable after construction.
+- `WorkflowEngine.execute()` uses only method-local state.
+- `NodeOutcome` and `ExecutionResult` are immutable.
+- The engine does not use global state, caching, or shared mutable data.
+
+---
+
+### Important Considerations
+
+Thread safety depends on how you implement your nodes and context:
+
+- Nodes should be stateless or otherwise thread-safe.
+- Context objects should not contain shared mutable state.
+- If your context contains mutable collections or objects, avoid sharing them across executions.
+
+For example:
+
+```kotlin
+data class Policy(
+    val premium: BigDecimal,
+    val coverages: List<Coverage> // preferred over MutableList
+)
+```
+
+Using immutable data structures ensures safe concurrent execution.
+
+---
+
+### Execution Model
+
+Forerunner executes workflows sequentially within a single execution.
+
+It does **not** perform parallel or asynchronous node execution by default.
+
+Thread safety refers to concurrent executions, not parallel node processing within a single workflow run.
+
+---
+
+Forerunner is intentionally designed as a deterministic, stateless state machine engine suitable for use in high-concurrency server environments.
+

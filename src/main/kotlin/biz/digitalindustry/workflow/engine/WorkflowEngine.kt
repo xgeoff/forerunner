@@ -9,10 +9,13 @@ class WorkflowEngine<C>(
     private val workflow: Workflow<C>,
     private val config: EngineConfig = EngineConfig()
 ) {
+    constructor(workflow: Workflow<C>) : this(workflow, EngineConfig())
+
     fun execute(initialContext: C): ExecutionResult<C> {
         var currentContext = initialContext
         var currentNodeId = workflow.startNodeId
         val violations = mutableListOf<Violation>()
+        var hasError = false
         var steps = 0
 
         while (true) {
@@ -43,13 +46,23 @@ class WorkflowEngine<C>(
                 }
 
                 is NodeOutcome.Stop -> {
-                    violations += outcome.violations
+                    if (outcome.violations.isNotEmpty()) {
+                        violations += outcome.violations
+                        if (!hasError) {
+                            hasError = outcome.violations.any { it.severity == Severity.ERROR }
+                        }
+                    }
                     return ExecutionResult.Completed(outcome.context, violations.toList())
                 }
 
                 is NodeOutcome.Continue -> {
-                    violations += outcome.violations
-                    if (config.failFastOnError && violations.any { it.severity == Severity.ERROR }) {
+                    if (outcome.violations.isNotEmpty()) {
+                        violations += outcome.violations
+                        if (!hasError) {
+                            hasError = outcome.violations.any { it.severity == Severity.ERROR }
+                        }
+                    }
+                    if (config.failFastOnError && hasError) {
                         return ExecutionResult.ValidationFailed(outcome.context, violations.toList())
                     }
 
@@ -60,8 +73,13 @@ class WorkflowEngine<C>(
                 }
 
                 is NodeOutcome.Next -> {
-                    violations += outcome.violations
-                    if (config.failFastOnError && violations.any { it.severity == Severity.ERROR }) {
+                    if (outcome.violations.isNotEmpty()) {
+                        violations += outcome.violations
+                        if (!hasError) {
+                            hasError = outcome.violations.any { it.severity == Severity.ERROR }
+                        }
+                    }
+                    if (config.failFastOnError && hasError) {
                         return ExecutionResult.ValidationFailed(outcome.context, violations.toList())
                     }
 

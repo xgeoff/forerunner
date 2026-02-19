@@ -1,12 +1,22 @@
 plugins {
-    kotlin("jvm") version "2.0.21" apply false
+    kotlin("jvm") version "2.0.21"
 }
 
-allprojects {
-    group = "biz.digitalindustry.workflow"
-    version = "0.2.0"
+group = "biz.digitalindustry.workflow"
+version = "0.2.0"
 
-    repositories {
-        mavenCentral()
-    }
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation(kotlin("test"))
+}
+
+kotlin {
+    jvmToolchain(21)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
