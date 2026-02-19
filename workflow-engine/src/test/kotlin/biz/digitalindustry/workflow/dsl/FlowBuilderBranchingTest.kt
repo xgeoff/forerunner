@@ -24,7 +24,7 @@ class FlowBuilderBranchingTest {
                     NodeOutcome.Continue(ctx.copy(visited = ctx.visited + "router"))
                 }
             }
-            .next("fallback")
+            .then("fallback")
             .node("branchA") { ctx -> NodeOutcome.Stop(ctx.copy(visited = ctx.visited + "A")) }
             .node("fallback") { ctx -> NodeOutcome.Stop(ctx.copy(visited = ctx.visited + "fallback")) }
             .build()

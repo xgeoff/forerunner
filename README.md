@@ -1,21 +1,26 @@
-# Forerunner Workflow Engine
 
-Forerunner is a small, pure Kotlin workflow engine for deterministic node-based execution.
+# Forerunner
+
+**Forerunner** is a small, pure Kotlin workflow engine for deterministic, node-based execution.
 
 It is designed around:
+
 - Immutable context propagation
 - Explicit routing (`Continue`, `Next`, `Stop`, `Fatal`)
-- Violation accumulation (`WARNING` / `ERROR`)
+- Structured violation accumulation (`WARNING` / `ERROR`)
 - Optional fail-fast validation behavior
+- Deterministic graph execution
 
-## Modules
+No frameworks.  
+No reflection.  
+No runtime dependencies beyond Kotlin.
 
-- `workflow-engine`: core engine and public workflow abstractions
-- `lucerna`: depends on `workflow-engine` (no Lucerna types leak into engine)
+---
 
-## Core Concepts
+# Core Concepts
 
-### `Node<C>`
+## `Node<C>`
+
 A workflow step that receives a context and returns a `NodeOutcome<C>`.
 
 ```kotlin
@@ -25,20 +30,38 @@ interface Node<C> {
 }
 ```
 
-### `NodeOutcome<C>`
-A node can:
-- `Continue(context, violations)`: continue using default edge from current node
-- `Next(context, nextNodeId, violations)`: jump directly to a specific node
-- `Stop(context, violations)`: finish successfully
-- `Fatal(context, error)`: finish with fatal error
+---
 
-### `Workflow<C>`
-Defines a graph:
-- `startNodeId`: entry node
-- `nodes`: id -> node map
-- `defaultEdges`: default routing for `Continue`
+## `NodeOutcome<C>`
 
-### `WorkflowEngine<C>`
+A node may return:
+
+- `Continue(context, violations)`  
+  Continue using the default edge from the current node.
+
+- `Next(context, nextNodeId, violations)`  
+  Jump directly to a specific node.
+
+- `Stop(context, violations)`  
+  Finish successfully.
+
+- `Fatal(context, error)`  
+  Terminate execution due to fatal error.
+
+---
+
+## `Workflow<C>`
+
+Defines a directed graph:
+
+- `startNodeId` — entry node
+- `nodes` — map of id → node
+- `defaultEdges` — routing for `Continue`
+
+---
+
+## `WorkflowEngine<C>`
+
 Executes a workflow from an initial context:
 
 ```kotlin
@@ -48,32 +71,49 @@ class WorkflowEngine<C>(
 )
 ```
 
-### `EngineConfig`
-- `failFastOnError`: if `true`, return `ValidationFailed` when any accumulated `Severity.ERROR` appears during `Continue`/`Next`
-- `maxSteps`: safety guard against infinite loops (default `10_000`)
+---
 
-### `ExecutionResult<C>`
+## `EngineConfig`
+
+- `failFastOnError`  
+  If `true`, execution stops immediately when a `Severity.ERROR` violation is encountered during `Continue` or `Next`.
+
+- `maxSteps`  
+  Safety guard against infinite loops (default `10_000`).
+
+---
+
+## `ExecutionResult<C>`
+
 - `Completed(context, violations)`
 - `ValidationFailed(context, violations)`
 - `Fatal(context, error, violations)`
 
-## Execution Semantics
+---
+
+# Execution Semantics
 
 For each step:
-1. Guard: if `steps++ > maxSteps` -> `Fatal("Max steps exceeded")`
-2. Resolve current node by id; if missing -> `Fatal("Node not found: <id>")`
-3. Execute node in `try/catch`; thrown exception -> `Fatal`
+
+1. Guard against exceeding `maxSteps`
+2. Resolve current node by id (fatal if missing)
+3. Execute node in `try/catch` (exception → `Fatal`)
 4. Handle outcome:
-- `Fatal`: return fatal result
-- `Stop`: append violations and return completed
-- `Continue`: append violations, optional fail-fast check, then route via `defaultEdges[currentNodeId]`
-- `Next`: append violations, optional fail-fast check, then route to `nextNodeId`
+
+| Outcome   | Behavior |
+|-----------|----------|
+| `Fatal`   | Return fatal result |
+| `Stop`    | Append violations and return `Completed` |
+| `Continue`| Append violations, optional fail-fast check, route via default edge |
+| `Next`    | Append violations, optional fail-fast check, route to explicit node |
 
 If `Continue` has no default edge, execution ends as `Completed`.
 
-## Usage
+---
 
-### Object-Based Construction
+# Usage
+
+## Object-Based Construction
 
 ```kotlin
 import biz.digitalindustry.workflow.core.Node
@@ -85,15 +125,21 @@ data class IntContext(val value: Int)
 
 class AddTenNode : Node<IntContext> {
     override val id = "addTen"
+
     override fun execute(context: IntContext): NodeOutcome<IntContext> {
-        return NodeOutcome.Continue(context.copy(value = context.value + 10))
+        return NodeOutcome.Continue(
+            context.copy(value = context.value + 10)
+        )
     }
 }
 
 class MultiplyByTwoNode : Node<IntContext> {
     override val id = "multiplyByTwo"
+
     override fun execute(context: IntContext): NodeOutcome<IntContext> {
-        return NodeOutcome.Stop(context.copy(value = context.value * 2))
+        return NodeOutcome.Stop(
+            context.copy(value = context.value * 2)
+        )
     }
 }
 
@@ -106,16 +152,30 @@ val workflow = Workflow(
     defaultEdges = mapOf("addTen" to "multiplyByTwo")
 )
 
-val result = WorkflowEngine(workflow).execute(IntContext(5))
+val result = WorkflowEngine(workflow)
+    .execute(IntContext(5))
+
 // Completed with context.value == 30
 ```
 
-### Fluent `FlowBuilder` Construction
+---
+
+# Fluent Construction (FlowBuilder)
+
+Forerunner includes a fluent builder for defining workflows without directly constructing maps.
 
 ```kotlin
 import biz.digitalindustry.workflow.core.NodeOutcome
 import biz.digitalindustry.workflow.dsl.FlowBuilder
+```
 
+---
+
+## Sequential Flow Using `.then(...)`
+
+Use `.then()` when defining a linear flow:
+
+```kotlin
 data class IntContext(val value: Int)
 
 val flow = FlowBuilder.start<IntContext>("addTen")
@@ -129,39 +189,112 @@ val flow = FlowBuilder.start<IntContext>("addTen")
     .build()
 ```
 
-`next(...)` has the same behavior as `then(...)` and can be used when that name reads better:
+`.then()` reads naturally for sequential pipelines.
+
+---
+
+## Branching Graph with Default Edge + Runtime Next
+
+Use `.then()` to define the default edge for `Continue`, and `NodeOutcome.Next(...)` for runtime branching.
+
+Example: a validation step that may branch at runtime, but still has a defined default route.
+
+### Graph
+
+```
+validate
+   ├── highRisk
+   └── standard (default)
+highRisk → finalize
+standard → finalize
+```
 
 ```kotlin
-val flow = FlowBuilder.start<IntContext>("start")
-    .node("start") { ctx -> NodeOutcome.Continue(ctx) }
-    .next("end")
-    .node("end") { ctx -> NodeOutcome.Stop(ctx) }
+data class RiskContext(
+    val score: Int,
+    val path: MutableList<String> = mutableListOf()
+)
+
+val flow = FlowBuilder.start<RiskContext>("validate")
+
+    .node("validate") { ctx ->
+        ctx.path.add("validate")
+
+        if (ctx.score > 80)
+            NodeOutcome.Next(ctx, "highRisk")   // runtime branch
+        else
+            NodeOutcome.Continue(ctx)           // fallback
+    }
+    .then("standard")   // default edge for Continue
+
+    .node("highRisk") { ctx ->
+        ctx.path.add("highRisk")
+        NodeOutcome.Continue(ctx)
+    }
+    .then("finalize")
+
+    .node("standard") { ctx ->
+        ctx.path.add("standard")
+        NodeOutcome.Continue(ctx)
+    }
+    .then("finalize")
+
+    .node("finalize") { ctx ->
+        ctx.path.add("finalize")
+        NodeOutcome.Stop(ctx)
+    }
+
     .build()
 ```
 
-## Canonical Examples in Tests
+In this example:
 
-Implemented under:
-- `workflow-engine/src/test/kotlin/biz/digitalindustry/workflow/engine/WorkflowExamplesTest.kt`
+- `.then("standard")` defines the default edge for `Continue`.
+- `NodeOutcome.Next(...)` performs runtime branching and can override that default at execution time.
+- `.then("finalize")` expresses simple sequential routing.
 
-Includes:
-- Linear transformation flow
-- Branching validation flow
-- Mixed routing + validation accumulation
+---
 
-Each example is validated in both object-based and fluent-construction form.
+`.then()` defines default routing for `Continue`.  
+Dynamic jumps are performed via `NodeOutcome.Next(...)`.
 
-## Build and Test
+---
 
-From repository root:
+# Canonical Test Scenarios
 
-```bash
-./gradlew :workflow-engine:test
-./gradlew :lucerna:build
+Complex graph examples are implemented under:
+
+```
+src/test/kotlin/biz/digitalindustry/workflow/
 ```
 
-## Design Constraints
+Covered scenarios include:
 
-- Engine is domain-agnostic and side-effect free except for node execution logic you supply.
-- No external runtime dependencies are required beyond Kotlin/Gradle defaults.
-- No Lucerna domain types are introduced into `workflow-engine`.
+- Linear transformation flows
+- Branching validation graphs
+- Mixed default + runtime routing
+- Validation accumulation
+- Fail-fast behavior
+- Loop protection via `maxSteps`
+
+---
+
+# Build & Test
+
+From project root:
+
+```bash
+./gradlew test
+```
+
+---
+
+# Design Constraints
+
+- Domain-agnostic
+- Deterministic execution
+- Immutable context model
+- Single default edge per node
+- No external runtime dependencies
+- No framework coupling
+- Fluent builder is optional — core engine remains independent

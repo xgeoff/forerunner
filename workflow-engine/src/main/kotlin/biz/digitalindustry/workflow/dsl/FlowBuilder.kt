@@ -47,18 +47,6 @@ class FlowBuilder<C> private constructor(
         return this
     }
 
-    fun next(nextId: String): FlowBuilder<C> {
-        val from = requireNotNull(lastDefinedNodeId) {
-            "No previously defined node to connect from"
-        }
-        if (edges.containsKey(from)) {
-            throw IllegalStateException("Default edge already defined from node: $from")
-        }
-
-        edges[from] = nextId
-        return this
-    }
-
     fun build(): Workflow<C> {
         if (!nodes.containsKey(startNodeId)) {
             throw IllegalStateException("Start node not found: $startNodeId")

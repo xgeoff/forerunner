@@ -29,7 +29,7 @@ class FlowBuilderCanonicalScenariosTest {
                     NodeOutcome.Continue(ctx)
                 }
             }
-            .next("standard")
+            .then("standard")
             .node("highRisk") { ctx ->
                 ctx.path.add("highRisk")
                 NodeOutcome.Continue(
@@ -83,7 +83,7 @@ class FlowBuilderCanonicalScenariosTest {
                     NodeOutcome.Continue(ctx)
                 }
             }
-            .next("end")
+            .then("end")
             .node("review") { ctx ->
                 ctx.steps.add("review")
                 NodeOutcome.Continue(ctx)
