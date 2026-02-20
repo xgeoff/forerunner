@@ -733,8 +733,7 @@ def workflow = FlowBuilder.<PolicyCtx>start("validate")
             NodeOutcome.next(new PolicyCtx(score: ctx.score, status: "APPROVED"), "complete")
         }
     }
-    .then("complete")
-    .node("complete") { PolicyCtx ctx ->
+    .then("complete") { PolicyCtx ctx ->
         NodeOutcome.stop(ctx)
     }
     .build()
