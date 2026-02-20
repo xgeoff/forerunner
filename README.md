@@ -753,61 +753,32 @@ if (result instanceof ExecutionResult.Completed<PolicyCtx>) {
 
 ---
 
-## Thread Safety
+## Thread Safety and Concurrency
 
-Forerunner is designed to be thread-safe and reentrant.
+Forerunner is designed to be fully thread-safe and reentrant.
 
-### Thread Safety and Concurrency
+### Workflow
 
-A single `Workflow` instance can be shared safely across threads.
+- A `Workflow` instance is immutable after construction.
+- A single `Workflow` may be safely shared across threads.
+- Multiple threads may execute the same workflow concurrently using different context instances.
 
-A `WorkflowEngine` instance is bound to a single `Workflow` definition.
-It cannot execute multiple different workflow types.
+### WorkflowEngine
 
-However, a single `WorkflowEngine` instance can execute its configured
-workflow concurrently across multiple threads.
+- `WorkflowEngine` is stateless.
+- It is not bound to a specific workflow.
+- A single engine instance may execute any number of different workflow definitions.
+- Multiple threads may safely call:
 
-Multiple threads may safely call `engine.execute(workflow, context)` at the same
-time without synchronization.
-
-This is possible because:
-
-- `Workflow` is immutable after construction.
-- `WorkflowEngine.execute()` uses only method-local state.
-- `NodeOutcome` and `ExecutionResult` are immutable.
-- The engine does not use global state, caching, or shared mutable data.
-
----
-
-### Important Considerations
-
-Thread safety depends on how you implement your nodes and context:
-
-- Nodes should be stateless or otherwise thread-safe.
-- Context objects should not contain shared mutable state.
-- If your context contains mutable collections or objects, avoid sharing them across executions.
-
-For example:
-
-```kotlin
-data class Policy(
-    val premium: BigDecimal,
-    val coverages: List<Coverage> // preferred over MutableList
-)
+```java
+engine.execute(workflow, context);
 ```
 
-Using immutable data structures ensures safe concurrent execution.
+concurrently without synchronization.
 
----
+### Why This Is Safe
 
-### Execution Model
-
-Forerunner executes workflows sequentially within a single execution.
-
-It does **not** perform parallel or asynchronous node execution by default.
-
-Thread safety refers to concurrent executions, not parallel node processing within a single workflow run.
-
----
-
-Forerunner is intentionally designed as a deterministic, stateless state machine engine suitable for use in high-concurrency server environments.
+* `Workflow` is immutable.
+* `WorkflowEngine.execute()` uses only method-local state.
+* `NodeOutcome` and `ExecutionResult` are immutable.
+* The engine does not use global state, caching, or shared mutable data.
