@@ -653,6 +653,106 @@ Forerunner is intentionally designed to be JVM-first and usable from Kotlin, Jav
 
 ---
 
+## Using the Workflow Engine from Groovy
+
+The engine is fully JVM-compatible and can be used directly from Groovy.
+Groovy closures map naturally to node execution functions, and both object-model
+and fluent builder styles are supported.
+
+---
+
+### Groovy – Object Model Style
+
+```groovy
+import biz.digitalindustry.workflow.core.Node
+import biz.digitalindustry.workflow.core.NodeOutcome
+import biz.digitalindustry.workflow.core.Workflow
+import biz.digitalindustry.workflow.engine.ExecutionResult
+import biz.digitalindustry.workflow.engine.WorkflowEngine
+import biz.digitalindustry.workflow.model.Violation
+
+class PolicyCtx {
+    int score
+    String status
+}
+
+def workflow = new Workflow<PolicyCtx>(
+    "validate",
+    [
+        "validate": new Node<PolicyCtx>({ PolicyCtx ctx ->
+            if (ctx.score < 600) {
+                NodeOutcome.stop(
+                    new PolicyCtx(score: ctx.score, status: "REJECTED"),
+                    [Violation.error("UW_LOW_SCORE", "Score below threshold")]
+                )
+            } else {
+                NodeOutcome.next(
+                    new PolicyCtx(score: ctx.score, status: "APPROVED"),
+                    "complete"
+                )
+            }
+        }),
+        "complete": new Node<PolicyCtx>({ PolicyCtx ctx ->
+            NodeOutcome.stop(ctx)
+        })
+    ]
+)
+
+def engine = new WorkflowEngine()
+def result = engine.execute(workflow, new PolicyCtx(score: 650, status: "PENDING"))
+
+if (result instanceof ExecutionResult.Completed<PolicyCtx>) {
+    println("Completed: ${result.context.status}")
+} else if (result instanceof ExecutionResult.ValidationFailed<PolicyCtx>) {
+    println("Validation failed: ${result.violations}")
+} else if (result instanceof ExecutionResult.Fatal<PolicyCtx>) {
+    println("Fatal: ${result.error.message}")
+}
+```
+
+---
+
+### Groovy – Fluent API Style
+
+```groovy
+import biz.digitalindustry.workflow.core.NodeOutcome
+import biz.digitalindustry.workflow.dsl.FlowBuilder
+import biz.digitalindustry.workflow.engine.ExecutionResult
+import biz.digitalindustry.workflow.engine.WorkflowEngine
+
+class PolicyCtx {
+    int score
+    String status
+}
+
+def workflow = FlowBuilder.<PolicyCtx>start("validate")
+    .node("validate") { PolicyCtx ctx ->
+        if (ctx.score < 600) {
+            NodeOutcome.stop(new PolicyCtx(score: ctx.score, status: "REJECTED"))
+        } else {
+            NodeOutcome.next(new PolicyCtx(score: ctx.score, status: "APPROVED"), "complete")
+        }
+    }
+    .then("complete")
+    .node("complete") { PolicyCtx ctx ->
+        NodeOutcome.stop(ctx)
+    }
+    .build()
+
+def engine = new WorkflowEngine()
+def result = engine.execute(workflow, new PolicyCtx(score: 720, status: "PENDING"))
+
+if (result instanceof ExecutionResult.Completed<PolicyCtx>) {
+    println("Completed: ${result.context.status}")
+} else if (result instanceof ExecutionResult.ValidationFailed<PolicyCtx>) {
+    println("Validation failed: ${result.violations}")
+} else if (result instanceof ExecutionResult.Fatal<PolicyCtx>) {
+    println("Fatal: ${result.error.message}")
+}
+```
+
+---
+
 ## Thread Safety
 
 Forerunner is designed to be thread-safe and reentrant.
