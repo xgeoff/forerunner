@@ -3,6 +3,35 @@ package biz.digitalindustry.workflow.dsl
 import biz.digitalindustry.workflow.core.Node
 import biz.digitalindustry.workflow.core.NodeOutcome
 import biz.digitalindustry.workflow.core.Workflow
+import kotlin.OverloadResolutionByLambdaReturnType
+import kotlin.experimental.ExperimentalTypeInference
+import kotlin.jvm.JvmName
+
+class NodeScope<C>(private val context: C) {
+
+    private var outcome: NodeOutcome<C>? = null
+
+    fun stop(transform: (C) -> C) {
+        outcome = NodeOutcome.stop(transform(context))
+    }
+
+    fun next(nodeId: String, transform: (C) -> C) {
+        outcome = NodeOutcome.next(transform(context), nodeId)
+    }
+
+    fun continueWith(transform: (C) -> C) {
+        outcome = NodeOutcome.continueWith(transform(context))
+    }
+
+    fun fatal(error: Throwable) {
+        outcome = NodeOutcome.fatal(context, error)
+    }
+
+    internal fun build(): NodeOutcome<C> {
+        return outcome
+            ?: throw IllegalStateException("Node must define an outcome")
+    }
+}
 
 class FlowBuilder<C> private constructor(
     private val startNode: String
@@ -16,6 +45,8 @@ class FlowBuilder<C> private constructor(
     private val continueTo = mutableMapOf<String, String>()
     private var lastDefinedNodeId: String? = null
 
+    @OptIn(ExperimentalTypeInference::class)
+    @OverloadResolutionByLambdaReturnType
     fun node(
         id: String,
         block: (C) -> NodeOutcome<C>
@@ -29,6 +60,20 @@ class FlowBuilder<C> private constructor(
         return this
     }
 
+    @OptIn(ExperimentalTypeInference::class)
+    @OverloadResolutionByLambdaReturnType
+    @JvmName("nodeWithScopeDsl")
+    fun node(
+        nodeId: String,
+        block: NodeScope<C>.() -> Unit
+    ): FlowBuilder<C> {
+        return node(nodeId) { ctx ->
+            val scope = NodeScope(ctx)
+            scope.block()
+            scope.build()
+        }
+    }
+
     fun then(nextId: String): FlowBuilder<C> {
         val from = requireNotNull(lastDefinedNodeId) {
             "No previously defined node to connect from"
@@ -38,6 +83,29 @@ class FlowBuilder<C> private constructor(
         }
 
         continueTo[from] = nextId
+        return this
+    }
+
+    @OptIn(ExperimentalTypeInference::class)
+    @OverloadResolutionByLambdaReturnType
+    fun then(
+        nodeId: String,
+        block: (C) -> NodeOutcome<C>
+    ): FlowBuilder<C> {
+        then(nodeId)
+        node(nodeId, block)
+        return this
+    }
+
+    @OptIn(ExperimentalTypeInference::class)
+    @OverloadResolutionByLambdaReturnType
+    @JvmName("thenWithScopeDsl")
+    fun then(
+        nodeId: String,
+        block: NodeScope<C>.() -> Unit
+    ): FlowBuilder<C> {
+        then(nodeId)
+        node(nodeId, block)
         return this
     }
 

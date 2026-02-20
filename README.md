@@ -337,6 +337,39 @@ val flow = FlowBuilder.start<IntContext>("addTen")
 
 ---
 
+### Chained Node Definition with `then(nodeId, block)`
+
+```kotlin
+val flow = FlowBuilder.start<IntContext>("addTen")
+    .node("addTen") { ctx ->
+        NodeOutcome.continueWith(ctx.copy(value = ctx.value + 10))
+    }
+    .then("multiplyByTwo") { ctx ->
+        NodeOutcome.stop(ctx.copy(value = ctx.value * 2))
+    }
+    .build()
+```
+
+### DSL Sugar
+
+In addition to returning `NodeOutcome` directly, nodes may use the DSL
+helper functions (`stop`, `next`, `continueWith`, `fatal`) to define
+outcomes declaratively. This improves readability while preserving
+the same execution semantics.
+
+```kotlin
+val flow = FlowBuilder.start<IntContext>("addTen")
+    .node("addTen") {
+        continueWith { it.copy(value = it.value + 10) }
+    }
+    .then("multiplyByTwo") {
+        stop { it.copy(value = it.value * 2) }
+    }
+    .build()
+```
+
+---
+
 ## Branching Graph with Default Edge + Runtime Next
 
 Use `.then()` to define default continue routing for `Continue`, and `NodeOutcome.next(...)` for runtime branching.
