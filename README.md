@@ -175,6 +175,7 @@ If `Continue` has no `continueTo` mapping, execution ends as `Completed`.
 import biz.digitalindustry.workflow.core.Node
 import biz.digitalindustry.workflow.core.NodeOutcome
 import biz.digitalindustry.workflow.core.Workflow
+import biz.digitalindustry.workflow.engine.ExecutionResult
 import biz.digitalindustry.workflow.engine.WorkflowEngine
 
 data class IntContext(val value: Int)
@@ -195,7 +196,29 @@ val workflow = Workflow(
 val engine = WorkflowEngine()
 val result = engine.execute(workflow, IntContext(5))
 
-// Completed with context.value == 30
+when (result) {
+    is ExecutionResult.Completed -> {
+        println("Completed: ${result.context.value}")
+    }
+    is ExecutionResult.ValidationFailed -> {
+        println("Validation failed: ${result.violations}")
+    }
+    is ExecutionResult.Fatal -> {
+        println("Fatal error: ${result.error.message}")
+    }
+}
+
+result.fold(
+    onCompleted = { completed ->
+        println("Completed via fold: ${completed.context.value}")
+    },
+    onValidationFailed = { failed ->
+        println("Validation failed via fold: ${failed.violations}")
+    },
+    onFatal = { fatal ->
+        println("Fatal via fold: ${fatal.error.message}")
+    }
+)
 ```
 
 ## Complex Graph Example (Object Model)
@@ -641,6 +664,27 @@ else if (result instanceof ExecutionResult.Fatal<IntContext> fatal) {
 
 ---
 
+### Handling Results in Java Using `fold`
+
+```java
+result.fold(
+    completed -> {
+        System.out.println("Completed: " + completed.getContext());
+        return null;
+    },
+    failed -> {
+        System.out.println("Validation failed: " + failed.getViolations());
+        return null;
+    },
+    fatal -> {
+        System.out.println("Fatal: " + fatal.getError().getMessage());
+        return null;
+    }
+);
+```
+
+---
+
 ### Design Notes
 
 * `Node` is a Java-compatible functional interface.
@@ -708,6 +752,18 @@ if (result instanceof ExecutionResult.Completed<PolicyCtx>) {
 } else if (result instanceof ExecutionResult.Fatal<PolicyCtx>) {
     println("Fatal: ${result.error.message}")
 }
+
+result.fold(
+    { completed ->
+        println("Completed via fold: ${completed.context.status}")
+    },
+    { failed ->
+        println("Validation failed via fold: ${failed.violations}")
+    },
+    { fatal ->
+        println("Fatal via fold: ${fatal.error.message}")
+    }
+)
 ```
 
 ---
@@ -748,6 +804,18 @@ if (result instanceof ExecutionResult.Completed<PolicyCtx>) {
 } else if (result instanceof ExecutionResult.Fatal<PolicyCtx>) {
     println("Fatal: ${result.error.message}")
 }
+
+result.fold(
+    { completed ->
+        println("Completed via fold: ${completed.context.status}")
+    },
+    { failed ->
+        println("Validation failed via fold: ${failed.violations}")
+    },
+    { fatal ->
+        println("Fatal via fold: ${fatal.error.message}")
+    }
+)
 ```
 
 ---
