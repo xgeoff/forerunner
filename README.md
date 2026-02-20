@@ -19,15 +19,16 @@ License: [MIT](LICENSE)
 
 ---
 
-## Quick Mental Model
+# Quick Mental Model
 
 A workflow is a directed graph of nodes.
 
 Each node:
 
 1. Receives a context
-2. Returns a routing decision (`NodeOutcome`)
-3. The engine walks the graph deterministically until completion
+2. Returns a `NodeOutcome`
+3. The engine walks the graph deterministically
+4. Execution produces an `ExecutionResult`
 
 Core flow:
 
@@ -35,162 +36,16 @@ Core flow:
 
 Node → NodeOutcome → Workflow → WorkflowEngine → ExecutionResult
 
-```
+````
 
-The engine contains no global state and performs no hidden magic.  
-Execution is explicit and predictable.
+The engine performs no implicit branching, reflection, or dynamic rule evaluation.
+All transitions are explicit.
 
 ---
 
-# Core Concepts
-
-## Node<C>
-
-A workflow step that receives a context and returns a `NodeOutcome<C>`.
+# Quick Example (Kotlin)
 
 ```kotlin
-fun interface Node<C> {
-    fun execute(context: C): NodeOutcome<C>
-}
-```
-
----
-
-## NodeOutcome<C>
-
-A node may return:
-
-* `Continue(context, violations)`
-  Continue using default routing from the current node.
-
-* `Next(context, nextNodeId, violations)`
-  Jump directly to a specific node.
-
-* `Stop(context, violations)`
-  Finish successfully.
-
-* `Fatal(context, error)`
-  Terminate execution due to fatal error.
-
-Routing decisions are explicit and deterministic.
-
----
-
-## Workflow<C>
-
-Defines a directed graph:
-
-* `startNode` — entry node
-* `nodes` — map of id → node
-* `continueTo` — routing for `Continue`
-
-Each node is identified by a unique string key.
-
-The `startNode` must match one of the defined node identifiers.
-
-Java-friendly constructor:
-
-```kotlin
-Workflow(startNode, nodes)
-```
-
-Workflows are immutable after construction.
-
----
-
-## WorkflowEngine
-
-Executes a workflow from an initial context:
-
-```kotlin
-class WorkflowEngine(
-    private val config: EngineConfig = EngineConfig()
-)
-```
-
-`WorkflowEngine` is stateless and can execute any `Workflow`.
-
-Execution signature:
-
-```kotlin
-engine.execute(workflow, context)
-```
-
----
-
-## EngineConfig
-
-* `failFastOnError`
-  If `true`, execution stops immediately when a `Severity.ERROR` violation is encountered.
-
-* `maxSteps`
-  Safety guard against infinite loops (default `10_000`).
-
-Example:
-
-```kotlin
-val engine = WorkflowEngine(
-    EngineConfig(
-        failFastOnError = true,
-        maxSteps = 5_000
-    )
-)
-```
-
-Java:
-
-```java
-EngineConfig cfg = new EngineConfig(true, 5_000);
-WorkflowEngine engine = new WorkflowEngine(cfg);
-```
-
----
-
-## ExecutionResult<C>
-
-Execution produces one of:
-
-* `Completed(context, violations)`
-* `ValidationFailed(context, violations)`
-* `Fatal(context, error, violations)`
-
-`ExecutionResult` is a sealed type and supports structured pattern handling via `when` (Kotlin) or `fold()` (JVM languages).
-
----
-
-# Execution Semantics
-
-For each step:
-
-1. Guard against exceeding `maxSteps`
-2. Resolve current node (fatal if missing)
-3. Execute node (exception → `Fatal`)
-4. Process outcome
-
-| Outcome    | Behavior                                                            |
-| ---------- | ------------------------------------------------------------------- |
-| `Fatal`    | Return fatal result                                                 |
-| `Stop`     | Append violations and return `Completed`                            |
-| `Continue` | Append violations, optional fail-fast check, route via `continueTo` |
-| `Next`     | Append violations, optional fail-fast check, route to explicit node |
-
-If `Continue` has no `continueTo` mapping, execution ends as `Completed`.
-
----
-
-# Usage
-
-## Kotlin
-
-### Object-Based Construction
-
-```kotlin
-import biz.digitalindustry.workflow.core.Node
-import biz.digitalindustry.workflow.core.NodeOutcome
-import biz.digitalindustry.workflow.core.Workflow
-import biz.digitalindustry.workflow.engine.ExecutionResult
-import biz.digitalindustry.workflow.engine.WorkflowEngine
-
 data class IntContext(val value: Int)
 
 val workflow = Workflow(
@@ -211,35 +66,192 @@ val result = engine.execute(workflow, IntContext(5))
 
 when (result) {
     is ExecutionResult.Completed ->
-        println("Completed: ${result.context.value}")
+        println(result.context.value) // 30
+    else ->
+        println("Unexpected result")
+}
+````
 
-    is ExecutionResult.ValidationFailed ->
-        println("Validation failed: ${result.violations}")
+Now that you’ve seen it run, here is how it works internally.
 
-    is ExecutionResult.Fatal ->
-        println("Fatal error: ${result.error.message}")
+---
+
+# Core Types
+
+## Node<C>
+
+```kotlin
+fun interface Node<C> {
+    fun execute(context: C): NodeOutcome<C>
 }
 ```
 
-### Using `fold()`
+* Pure function from context → routing decision
+* No hidden state
+* No lifecycle callbacks
+* No framework dependency
+
+---
+
+## NodeOutcome<C>
+
+Defines explicit routing semantics.
+
+A node returns one of:
+
+* `Continue(context, violations)`
+* `Next(context, nextNodeId, violations)`
+* `Stop(context, violations)`
+* `Fatal(context, error)`
+
+### Continue
+
+* Uses `continueTo` mapping for default routing.
+* Allows violation accumulation.
+
+### Next
+
+* Performs explicit dynamic jump to another node.
+
+### Stop
+
+* Terminates successfully.
+
+### Fatal
+
+* Terminates immediately due to unrecoverable error.
+
+There is no implicit fallback behavior.
+
+---
+
+## Workflow<C>
+
+A workflow is a value object describing a directed graph.
+
+```kotlin
+Workflow(
+    startNode: String,
+    nodes: Map<String, Node<C>>,
+    continueTo: Map<String, String>
+)
+```
+
+### Properties
+
+* `startNode` must exist in `nodes`
+* `nodes` defines execution behavior
+* `continueTo` defines default routing for `Continue`
+
+Workflows are immutable after construction.
+
+They are safe to share across threads.
+
+---
+
+## WorkflowEngine
+
+```kotlin
+class WorkflowEngine(
+    private val config: EngineConfig = EngineConfig()
+)
+```
+
+The engine:
+
+* Is stateless
+* Is not bound to a specific workflow
+* Uses only method-local execution state
+* Performs deterministic graph walking
+
+Execution method:
+
+```kotlin
+engine.execute(workflow, context)
+```
+
+---
+
+## EngineConfig
+
+```kotlin
+EngineConfig(
+    failFastOnError: Boolean = false,
+    maxSteps: Int = 10_000
+)
+```
+
+### failFastOnError
+
+Stops execution immediately if an `ERROR` violation is encountered.
+
+### maxSteps
+
+Prevents infinite loops.
+
+---
+
+## ExecutionResult<C>
+
+Execution produces exactly one of:
+
+* `Completed(context, violations)`
+* `ValidationFailed(context, violations)`
+* `Fatal(context, error, violations)`
+
+It is a sealed hierarchy.
+
+### Kotlin Handling
+
+```kotlin
+when (result) {
+    is ExecutionResult.Completed -> { ... }
+    is ExecutionResult.ValidationFailed -> { ... }
+    is ExecutionResult.Fatal -> { ... }
+}
+```
+
+### JVM-Friendly Handling (`fold()`)
 
 ```kotlin
 result.fold(
-    onCompleted = { println("Completed via fold: ${it.context.value}") },
-    onValidationFailed = { println("Validation failed via fold: ${it.violations}") },
-    onFatal = { println("Fatal via fold: ${it.error.message}") }
+    onCompleted = { ... },
+    onValidationFailed = { ... },
+    onFatal = { ... }
 )
 ```
 
 ---
 
-## Fluent Construction (FlowBuilder)
+# Execution Semantics
+
+For each step:
+
+1. Guard against exceeding `maxSteps`
+2. Resolve current node (fatal if missing)
+3. Execute node (exceptions become `Fatal`)
+4. Process outcome
+
+| Outcome    | Behavior               |
+| ---------- | ---------------------- |
+| `Fatal`    | Immediate termination  |
+| `Stop`     | Successful completion  |
+| `Continue` | Route via `continueTo` |
+| `Next`     | Route to explicit node |
+
+If `Continue` has no mapping in `continueTo`, execution ends as `Completed`.
+
+---
+
+# Fluent Construction (FlowBuilder)
+
+The fluent builder provides structured graph construction.
+
+### Kotlin
 
 ```kotlin
-import biz.digitalindustry.workflow.dsl.FlowBuilder
-
 val flow = FlowBuilder.start<IntContext>("addTen")
-    .node("addTen") { ctx ->
+    .node("addTen") {
         continueWith { it.copy(value = it.value + 10) }
     }
     .then("multiplyByTwo") {
@@ -255,9 +267,7 @@ Dynamic branching uses `NodeOutcome.next(...)`.
 
 # Java Usage
 
-Forerunner is fully JVM-compatible.
-
-### Object-Based Construction
+### Object Model
 
 ```java
 Workflow<IntContext> workflow =
@@ -271,36 +281,26 @@ Workflow<IntContext> workflow =
         ),
         Map.of("addTen", "multiplyByTwo")
     );
-
-WorkflowEngine engine = new WorkflowEngine();
-var result = engine.execute(workflow, new IntContext(5));
 ```
 
-### Handling Results
-
-Using `instanceof`:
+### Fluent Builder
 
 ```java
-if (result instanceof ExecutionResult.Completed<IntContext> completed) {
-    System.out.println(completed.getContext());
-}
-```
-
-Using `fold()`:
-
-```java
-result.fold(
-    completed -> { System.out.println(completed.getContext()); return null; },
-    failed -> { System.out.println(failed.getViolations()); return null; },
-    fatal -> { System.out.println(fatal.getError()); return null; }
-);
+Workflow<IntContext> workflow =
+    FlowBuilder.<IntContext>start("addTen")
+        .node("addTen", ctx ->
+            NodeOutcome.continueWith(ctx.withValue(ctx.value + 10))
+        )
+        .then("multiplyByTwo")
+        .node("multiplyByTwo", ctx ->
+            NodeOutcome.stop(ctx.withValue(ctx.value * 2))
+        )
+        .build();
 ```
 
 ---
 
 # Groovy Usage
-
-Groovy closures map naturally to node execution.
 
 ### Object Model
 
@@ -318,15 +318,21 @@ def workflow = new Workflow(
         }
     ]
 )
+```
 
-def engine = new WorkflowEngine()
-def result = engine.execute(workflow, new PolicyCtx(score: 700))
+### Fluent Builder
 
-result.fold(
-    { println("Completed: ${it.context}") },
-    { println("Validation failed: ${it.violations}") },
-    { println("Fatal: ${it.error}") }
-)
+```groovy
+def workflow = FlowBuilder.start(PolicyCtx)
+    .node("validate") { ctx ->
+        ctx.score < 600 ?
+            NodeOutcome.stop(ctx) :
+            NodeOutcome.next(ctx, "complete")
+    }
+    .then("complete") { ctx ->
+        NodeOutcome.stop(ctx)
+    }
+    .build()
 ```
 
 ---
@@ -335,24 +341,12 @@ result.fold(
 
 Forerunner is fully thread-safe and reentrant.
 
-### Workflow
-
-* Immutable after construction
-* Safe to share across threads
-* Multiple threads may execute concurrently with separate contexts
-
-### WorkflowEngine
-
-* Stateless
-* Not bound to a specific workflow
-* Safe for concurrent execution
-
-This is possible because:
-
 * `Workflow` is immutable
-* `WorkflowEngine.execute()` uses only method-local state
-* `NodeOutcome` and `ExecutionResult` are immutable
-* No global state or caching is used
+* `WorkflowEngine` is stateless
+* Execution uses method-local state only
+* No global caches or shared mutable data
+
+A single workflow and a single engine instance may be shared safely across threads.
 
 ---
 
@@ -361,10 +355,10 @@ This is possible because:
 * Domain-agnostic
 * Deterministic execution
 * Immutable context model
-* Single default continue routing edge per node
-* No framework coupling
+* Explicit routing only
 * No reflection
 * No hidden execution magic
+* Fluent builder is optional — core engine remains independent
 
 ---
 
@@ -374,6 +368,4 @@ This is possible because:
 ./gradlew test
 ```
 
----
-
-Forerunner is intentionally JVM-first and designed for architectural clarity over convenience magic.
+Forerunner prioritizes architectural clarity over implicit behavior.
