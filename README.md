@@ -200,6 +200,9 @@ val result = engine.execute(workflow, IntContext(5))
 
 ### Using the Workflow Engine from Java
 
+Java follows the same execution flow: create a `WorkflowEngine`, call
+`execute(workflow, context)`, and handle the typed `ExecutionResult`.
+
 ```java
 WorkflowEngine engine = new WorkflowEngine();
 var result = engine.execute(workflow, new IntContext(5));
