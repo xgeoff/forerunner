@@ -22,7 +22,7 @@ class FlowBuilderDslSugarTest {
             }
             .build()
 
-        val result = WorkflowEngine(flow).execute(IntContext(5))
+        val result = WorkflowEngine().execute(flow, IntContext(5))
 
         val completed = assertIs<ExecutionResult.Completed<IntContext>>(result)
         assertEquals(30, completed.context.value)
@@ -42,7 +42,7 @@ class FlowBuilderDslSugarTest {
             .then("multiplyByTwo", multiplyNode)
             .build()
 
-        val result = WorkflowEngine(flow).execute(IntContext(5))
+        val result = WorkflowEngine().execute(flow, IntContext(5))
 
         val completed = assertIs<ExecutionResult.Completed<IntContext>>(result)
         assertEquals(30, completed.context.value)

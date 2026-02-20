@@ -55,13 +55,13 @@ class FlowBuilderCanonicalScenariosTest {
             }
             .build()
 
-        val highRiskResult = WorkflowEngine(flow).execute(RiskContext(score = 90))
+        val highRiskResult = WorkflowEngine().execute(flow, RiskContext(score = 90))
         val highRiskCompleted = assertIs<ExecutionResult.Completed<RiskContext>>(highRiskResult)
         assertEquals(listOf("validate", "highRisk", "finalize"), highRiskCompleted.context.path)
         assertEquals(1, highRiskCompleted.violations.size)
         assertEquals(Severity.WARNING, highRiskCompleted.violations.single().severity)
 
-        val standardResult = WorkflowEngine(flow).execute(RiskContext(score = 50))
+        val standardResult = WorkflowEngine().execute(flow, RiskContext(score = 50))
         val standardCompleted = assertIs<ExecutionResult.Completed<RiskContext>>(standardResult)
         assertEquals(listOf("validate", "standard", "finalize"), standardCompleted.context.path)
         assertTrue(standardCompleted.violations.isEmpty())
@@ -95,11 +95,11 @@ class FlowBuilderCanonicalScenariosTest {
             }
             .build()
 
-        val unflaggedResult = WorkflowEngine(flow).execute(ReviewContext(flagged = false))
+        val unflaggedResult = WorkflowEngine().execute(flow, ReviewContext(flagged = false))
         val unflaggedCompleted = assertIs<ExecutionResult.Completed<ReviewContext>>(unflaggedResult)
         assertEquals(listOf("start", "end"), unflaggedCompleted.context.steps)
 
-        val flaggedResult = WorkflowEngine(flow).execute(ReviewContext(flagged = true))
+        val flaggedResult = WorkflowEngine().execute(flow, ReviewContext(flagged = true))
         val flaggedCompleted = assertIs<ExecutionResult.Completed<ReviewContext>>(flaggedResult)
         assertEquals(listOf("start", "review", "end"), flaggedCompleted.context.steps)
     }
@@ -116,11 +116,10 @@ class FlowBuilderCanonicalScenariosTest {
             .build()
 
         val engine = WorkflowEngine(
-            flow,
             EngineConfig(maxSteps = 5)
         )
 
-        val result = engine.execute(LoopContext(counter = 0))
+        val result = engine.execute(flow, LoopContext(counter = 0))
 
         val fatal = assertIs<ExecutionResult.Fatal<LoopContext>>(result)
         assertTrue(fatal.error.message.orEmpty().contains("Max steps exceeded"))
@@ -159,15 +158,14 @@ class FlowBuilderCanonicalScenariosTest {
             }
             .build()
 
-        val defaultResult = WorkflowEngine(flow).execute(ValidationContext())
+        val defaultResult = WorkflowEngine().execute(flow, ValidationContext())
         val defaultCompleted = assertIs<ExecutionResult.Completed<ValidationContext>>(defaultResult)
         assertEquals(listOf("step1", "step2", "step3"), defaultCompleted.context.steps)
         assertEquals(listOf("WARN_1", "ERR_1"), defaultCompleted.violations.map { it.code })
 
         val failFastResult = WorkflowEngine(
-            flow,
             EngineConfig(failFastOnError = true)
-        ).execute(ValidationContext())
+        ).execute(flow, ValidationContext())
 
         val validationFailed = assertIs<ExecutionResult.ValidationFailed<ValidationContext>>(failFastResult)
         assertEquals(listOf("step1", "step2"), validationFailed.context.steps)

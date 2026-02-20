@@ -5,13 +5,13 @@ import biz.digitalindustry.workflow.core.Workflow
 import biz.digitalindustry.workflow.model.Severity
 import biz.digitalindustry.workflow.model.Violation
 
-class WorkflowEngine<C>(
-    private val workflow: Workflow<C>,
+class WorkflowEngine(
     private val config: EngineConfig = EngineConfig()
 ) {
-    constructor(workflow: Workflow<C>) : this(workflow, EngineConfig())
-
-    fun execute(initialContext: C): ExecutionResult<C> {
+    fun <C> execute(
+        workflow: Workflow<C>,
+        initialContext: C
+    ): ExecutionResult<C> {
         var currentContext = initialContext
         var currentNodeId = workflow.startNode
         val violations = mutableListOf<Violation>()

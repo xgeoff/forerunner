@@ -29,11 +29,11 @@ class FlowBuilderBranchingTest {
             .node("fallback") { ctx -> NodeOutcome.Stop(ctx.copy(visited = ctx.visited + "fallback")) }
             .build()
 
-        val branched = WorkflowEngine(flow).execute(RouteContext(useBranchA = true))
+        val branched = WorkflowEngine().execute(flow, RouteContext(useBranchA = true))
         val branchedCompleted = assertIs<ExecutionResult.Completed<RouteContext>>(branched)
         assertEquals(listOf("router", "A"), branchedCompleted.context.visited)
 
-        val defaulted = WorkflowEngine(flow).execute(RouteContext(useBranchA = false))
+        val defaulted = WorkflowEngine().execute(flow, RouteContext(useBranchA = false))
         val defaultCompleted = assertIs<ExecutionResult.Completed<RouteContext>>(defaulted)
         assertEquals(listOf("router", "fallback"), defaultCompleted.context.visited)
     }

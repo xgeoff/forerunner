@@ -91,21 +91,21 @@ Workflow<MyCtx> wf = new Workflow<>(
 
 ---
 
-## `WorkflowEngine<C>`
+## `WorkflowEngine`
 
 Executes a workflow from an initial context:
 
 ```kotlin
-class WorkflowEngine<C>(
-    private val workflow: Workflow<C>,
+class WorkflowEngine(
     private val config: EngineConfig = EngineConfig()
 )
 ```
 
-`C` is the workflow context type. It is the same type passed into nodes and returned through `NodeOutcome` and `ExecutionResult`.
+`WorkflowEngine` is a stateless executor capable of running any `Workflow`.
+The generic type parameter is defined by the `Workflow` passed into `execute`.
 
 Example:
-- If your context is `PolicyCtx`, use `Workflow<PolicyCtx>` and `WorkflowEngine<PolicyCtx>`.
+- If your context is `PolicyCtx`, use `Workflow<PolicyCtx>` and `engine.execute(workflow, context)`.
 
 ---
 
@@ -123,7 +123,6 @@ Configure the engine by passing `EngineConfig` as the second constructor argumen
 
 ```kotlin
 val engine = WorkflowEngine(
-    workflow,
     EngineConfig(
         failFastOnError = true,
         maxSteps = 5_000
@@ -135,7 +134,7 @@ Java example:
 
 ```java
 EngineConfig cfg = new EngineConfig(true, 5_000);
-WorkflowEngine<MyCtx> engine = new WorkflowEngine<>(workflow, cfg);
+WorkflowEngine engine = new WorkflowEngine(cfg);
 ```
 
 ---
@@ -193,8 +192,8 @@ val workflow = Workflow(
     continueTo = mapOf("addTen" to "multiplyByTwo")
 )
 
-val result = WorkflowEngine(workflow)
-    .execute(IntContext(5))
+val engine = WorkflowEngine()
+val result = engine.execute(workflow, IntContext(5))
 
 // Completed with context.value == 30
 ```
@@ -571,10 +570,9 @@ Workflow<IntContext> workflow =
         )
     );
 
-WorkflowEngine<IntContext> engine =
-    new WorkflowEngine<>(workflow);
+WorkflowEngine engine = new WorkflowEngine();
 
-var result = engine.execute(new IntContext(5));
+var result = engine.execute(workflow, new IntContext(5));
 ````
 
 ---
@@ -626,7 +624,7 @@ NodeOutcome.continueWith(ctx, List.of(
 Since `ExecutionResult` is a sealed class, Java uses `instanceof`:
 
 ```java
-var result = engine.execute(context);
+var result = engine.execute(workflow, context);
 
 if (result instanceof ExecutionResult.Completed<IntContext> completed) {
     IntContext finalCtx = completed.getContext();
@@ -669,7 +667,7 @@ It cannot execute multiple different workflow types.
 However, a single `WorkflowEngine` instance can execute its configured
 workflow concurrently across multiple threads.
 
-Multiple threads may safely call `engine.execute(context)` at the same
+Multiple threads may safely call `engine.execute(workflow, context)` at the same
 time without synchronization.
 
 This is possible because:

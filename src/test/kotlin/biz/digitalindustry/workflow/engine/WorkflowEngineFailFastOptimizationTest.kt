@@ -34,9 +34,8 @@ class WorkflowEngineFailFastOptimizationTest {
         )
 
         val result = WorkflowEngine(
-            flow,
             EngineConfig(failFastOnError = true)
-        ).execute(Ctx())
+        ).execute(flow, Ctx())
 
         val failed = assertIs<ExecutionResult.ValidationFailed<Ctx>>(result)
         assertEquals(listOf("first"), failed.context.visited)

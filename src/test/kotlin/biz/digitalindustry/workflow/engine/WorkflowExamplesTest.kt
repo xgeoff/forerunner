@@ -28,7 +28,7 @@ class WorkflowExamplesTest {
             continueTo = mapOf("addTen" to "multiplyByTwo")
         )
 
-        val result = WorkflowEngine(workflow).execute(IntContext(5))
+        val result = WorkflowEngine().execute(workflow, IntContext(5))
 
         val completed = assertIs<ExecutionResult.Completed<IntContext>>(result)
         assertEquals(30, completed.context.value)
@@ -44,7 +44,7 @@ class WorkflowExamplesTest {
             edge("addTen", "multiplyByTwo")
         }.build()
 
-        val result = WorkflowEngine(workflow).execute(IntContext(5))
+        val result = WorkflowEngine().execute(workflow, IntContext(5))
 
         val completed = assertIs<ExecutionResult.Completed<IntContext>>(result)
         assertEquals(30, completed.context.value)
@@ -69,12 +69,12 @@ class WorkflowExamplesTest {
             )
         )
 
-        val underage = WorkflowEngine(workflow).execute(UserContext(age = 17))
+        val underage = WorkflowEngine().execute(workflow, UserContext(age = 17))
         val underageCompleted = assertIs<ExecutionResult.Completed<UserContext>>(underage)
         assertEquals(1, underageCompleted.violations.size)
         assertEquals("AGE-001", underageCompleted.violations.single().code)
 
-        val adult = WorkflowEngine(workflow).execute(UserContext(age = 18))
+        val adult = WorkflowEngine().execute(workflow, UserContext(age = 18))
         val adultCompleted = assertIs<ExecutionResult.Completed<UserContext>>(adult)
         assertTrue(adultCompleted.violations.isEmpty())
     }
@@ -95,7 +95,7 @@ class WorkflowExamplesTest {
             }
         }.build()
 
-        val result = WorkflowEngine(workflow).execute(UserContext(age = 16))
+        val result = WorkflowEngine().execute(workflow, UserContext(age = 16))
 
         val completed = assertIs<ExecutionResult.Completed<UserContext>>(result)
         assertEquals(1, completed.violations.size)
@@ -137,13 +137,13 @@ class WorkflowExamplesTest {
             )
         )
 
-        val invalid = WorkflowEngine(workflow).execute(OrderContext(total = 0.0))
+        val invalid = WorkflowEngine().execute(workflow, OrderContext(total = 0.0))
         val invalidCompleted = assertIs<ExecutionResult.Completed<OrderContext>>(invalid)
         assertEquals(0.0, invalidCompleted.context.total)
         assertFalse(invalidCompleted.context.discountApplied)
         assertEquals(listOf("ORD-001"), invalidCompleted.violations.map { it.code })
 
-        val discounted = WorkflowEngine(workflow).execute(OrderContext(total = 200.0))
+        val discounted = WorkflowEngine().execute(workflow, OrderContext(total = 200.0))
         val discountedCompleted = assertIs<ExecutionResult.Completed<OrderContext>>(discounted)
         assertEquals(180.0, discountedCompleted.context.total)
         assertTrue(discountedCompleted.context.discountApplied)
@@ -187,14 +187,13 @@ class WorkflowExamplesTest {
             edge("discount", "finalize")
         }.build()
 
-        val accumulateResult = WorkflowEngine(workflow).execute(OrderContext(total = -1.0))
+        val accumulateResult = WorkflowEngine().execute(workflow, OrderContext(total = -1.0))
         val accumulateCompleted = assertIs<ExecutionResult.Completed<OrderContext>>(accumulateResult)
         assertEquals(1, accumulateCompleted.violations.size)
 
         val failFastResult = WorkflowEngine(
-            workflow,
             EngineConfig(failFastOnError = true)
-        ).execute(OrderContext(total = -1.0))
+        ).execute(workflow, OrderContext(total = -1.0))
 
         val validationFailed = assertIs<ExecutionResult.ValidationFailed<OrderContext>>(failFastResult)
         assertEquals(listOf("ORD-001"), validationFailed.violations.map { it.code })

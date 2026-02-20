@@ -19,7 +19,7 @@ class JavaInteropStyleTest {
             )
         )
 
-        val result = WorkflowEngine(workflow).execute("ctx")
+        val result = WorkflowEngine().execute(workflow, "ctx")
 
         val completed = assertIs<ExecutionResult.Completed<String>>(result)
         assertEquals("ctx-done", completed.context)

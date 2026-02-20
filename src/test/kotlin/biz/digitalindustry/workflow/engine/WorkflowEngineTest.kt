@@ -42,7 +42,7 @@ class WorkflowEngineTest {
             continueTo = mapOf("A" to "B")
         )
 
-        val result = WorkflowEngine(workflow).execute("ctx")
+        val result = WorkflowEngine().execute(workflow, "ctx")
 
         val completed = assertIs<ExecutionResult.Completed<String>>(result)
         assertEquals("ctxABC", completed.context)
@@ -69,9 +69,8 @@ class WorkflowEngineTest {
         )
 
         val result = WorkflowEngine(
-            workflow = workflow,
             config = EngineConfig(failFastOnError = true)
-        ).execute("ctx")
+        ).execute(workflow, "ctx")
 
         val failed = assertIs<ExecutionResult.ValidationFailed<String>>(result)
         assertEquals("ctxA", failed.context)
@@ -86,7 +85,7 @@ class WorkflowEngineTest {
             nodes = emptyMap()
         )
 
-        val result = WorkflowEngine(workflow).execute("ctx")
+        val result = WorkflowEngine().execute(workflow, "ctx")
 
         val fatal = assertIs<ExecutionResult.Fatal<String>>(result)
         assertEquals("Node not found: missing", fatal.error.message)
@@ -105,9 +104,8 @@ class WorkflowEngineTest {
         )
 
         val result = WorkflowEngine(
-            workflow = workflow,
             config = EngineConfig(maxSteps = 0)
-        ).execute("ctx")
+        ).execute(workflow, "ctx")
 
         val fatal = assertIs<ExecutionResult.Fatal<String>>(result)
         assertEquals("Max steps exceeded", fatal.error.message)
