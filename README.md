@@ -393,8 +393,7 @@ NodeOutcome.continueWith(ctx, List.of(
 
 # Usage
 
-The engine performs no implicit branching, reflection, or dynamic rule evaluation.
-All transitions are explicit.
+The engine does not interpret rules or evaluate expressions at runtime. All routing decisions are produced explicitly by node code.
 
 ---
 
@@ -926,6 +925,19 @@ class FraudCheck implements Node<Policy> {
 
 Forerunner is intentionally designed to be JVM-first and usable from Kotlin, Java, or any other JVM language.
 
+### Architectural Beauty
+
+Forerunner separates:
+* Node behavior
+* Graph topology
+* Execution policy
+
+That separation is what allows:
+* Static definition
+* Dynamic loading
+* Generated workflows
+* Config-based workflows
+* DSL workflows
 
 ## Thread Safety and Concurrency
 
