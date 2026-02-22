@@ -866,18 +866,20 @@ defined via composition rather than subclassing.
 ```java
 public final class UnderwritingWorkflows {
 
-    private UnderwritingWorkflows() {
-        // prevent instantiation
+    Workflow<Policy> workflow;
+    
+    public UnderwritingWorkflows() {
+        workflow = new Workflow<>(
+                "underwrite",
+                Map.of(
+                        "underwrite", new UnderwriteRule(),
+                        "fraudcheck", new FraudCheck()
+                )
+        );
     }
 
-    public static Workflow<Policy> defaultWorkflow() {
-        return new Workflow<>(
-            "underwrite",
-            Map.of(
-                "underwrite", new UnderwriteRule(),
-                "fraudcheck", new FraudCheck()
-            )
-        );
+    public Workflow<Policy> getWorkflow() {
+        return workflow;
     }
 }
 
@@ -899,6 +901,41 @@ class FraudCheck implements Node<Policy> {
     @Override
     public NodeOutcome<Policy> execute(Policy context) {
         return NodeOutcome.stop(context);
+    }
+}
+```
+
+### Groovy version
+
+```groovy
+final class UnderwritingWorkflows {
+
+    final Workflow<Policy> workflow = new Workflow<>(
+            "underwrite",
+            [
+                    underwrite : new UnderwriteRule(),
+                    fraudcheck : new FraudCheck()
+            ]
+    )
+}
+class UnderwriteRule implements Node<Policy> {
+
+    @Override
+    NodeOutcome<Policy> execute(Policy ctx) {
+        if (ctx.score < 600) {
+            return NodeOutcome.stop(
+                    ctx,
+                    [Violation.error("UW_LOW_SCORE", "Score below threshold")]
+            )
+        }
+        NodeOutcome.next(ctx, "fraudcheck")
+    }
+}
+
+class FraudCheck implements Node<Policy> {
+    @Override
+    NodeOutcome<Policy> execute(Policy ctx) {
+        NodeOutcome.stop(ctx)
     }
 }
 ```
