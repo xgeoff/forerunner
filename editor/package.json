@@ -1,0 +1,19 @@
+{
+  "name": "forerunner-editor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "atomica": "^0.4.0-alpha",
+    "dagre": "^0.8.5",
+    "skeleton-css": "^2.0.4"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

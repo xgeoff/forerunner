@@ -1,0 +1,26 @@
+startNode = "validate"
+
+[nodes]
+[nodes.validate]
+type = "task"
+description = "Validate incoming payload"
+
+[nodes.highRisk]
+type = "task"
+description = "Manual high-risk review"
+
+[nodes.standard]
+type = "task"
+description = "Standard processing"
+
+[nodes.finalize]
+type = "task"
+description = "Finalize workflow"
+
+[continue]
+validate = "standard"
+highRisk = "finalize"
+standard = "finalize"
+
+[routing.validate.highRisk]
+to = "highRisk"

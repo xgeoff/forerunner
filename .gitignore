@@ -1,5 +1,7 @@
 .gradle/
 .gradle-home/
 .idea/
+.kotlin/
 build/
 out/
+editor/node_modules/

@@ -19,6 +19,44 @@ License: [MIT](LICENSE)
 
 ---
 
+## Repository Structure
+
+Forerunner is now organized as a multi-module Gradle build:
+
+- `model` - shared workflow contracts and data types (`Node`, `NodeOutcome`, `Workflow`, `Violation`, `Severity`)
+- `dsl-kotlin` - fluent Kotlin workflow construction (`FlowBuilder`)
+- `dsl-toml` - TOML-based workflow definition parsing and mapping (scaffold)
+- `core` - execution engine (`WorkflowEngine`, `EngineConfig`, `ExecutionResult`)
+- `validator` - validation module scaffold
+- `cli` - CLI module scaffold
+- `editor` - web editor scaffold (Node/Vite style project, not a Gradle module)
+- `examples/workflows` - reusable workflow definition examples
+
+Published Maven artifact:
+
+- `biz.digitalindustry.workflow:forerunner` (published from the `core` module)
+
+## Canonical TOML Schema
+
+The text-based workflow format is defined in:
+
+- `dsl-toml/SCHEMA.md`
+
+The canonical schema currently uses:
+
+- `continue` for fallback routing
+- `routing` for named branch routing
+
+Editor scaffold quickstart:
+
+```bash
+cd editor
+npm install
+npm run dev
+```
+
+---
+
 # Quick Mental Model
 
 A workflow is a directed graph of nodes.
@@ -742,69 +780,6 @@ data class PolicyCtx(
     val isLoyalCustomer: Boolean,
     val premium: Double,
     val status: String = "PENDING"
-)
-
-val workflow = Workflow(
-    startNode = "underwrite",
-
-    nodes = mapOf(
-
-        "underwrite" to Node { ctx: PolicyCtx ->
-            if (ctx.requiresRiskReview)
-                NodeOutcome.next(ctx, "riskCheck")
-            else
-                NodeOutcome.next(ctx, "eligibilityCheck")
-        },
-
-        "price" to Node { ctx ->
-            when {
-                ctx.isHighRisk ->
-                    NodeOutcome.next(ctx, "highRiskSurcharge")
-
-                ctx.isLoyalCustomer ->
-                    NodeOutcome.next(ctx, "loyaltyDiscount")
-
-                else ->
-                    NodeOutcome.continueWith(ctx)
-            }
-        },
-
-        "issue" to Node { ctx ->
-            NodeOutcome.stop(ctx.copy(status = "ISSUED"))
-        },
-
-        "riskCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
-        "fraudCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
-        "creditCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
-
-        "eligibilityCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
-        "ageCheck" to Node { ctx -> NodeOutcome.continueWith(ctx) },
-
-        "loyaltyDiscount" to Node { ctx ->
-            NodeOutcome.continueWith(ctx.copy(premium = ctx.premium * 0.9))
-        },
-
-        "highRiskSurcharge" to Node { ctx ->
-            NodeOutcome.continueWith(ctx.copy(premium = ctx.premium * 1.2))
-        }
-    ),
-
-    continueTo = mapOf(
-
-        // Underwriting branch
-        "riskCheck" to "fraudCheck",
-        "fraudCheck" to "creditCheck",
-        "creditCheck" to "price",
-
-        "eligibilityCheck" to "ageCheck",
-        "ageCheck" to "price",
-
-        // Pricing branch
-        "loyaltyDiscount" to "issue",
-        "highRiskSurcharge" to "issue",
-
-        "price" to "issue"
-    )
 )
 ```
 
