@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
+    "@xgeoff/skeleton-plus": "github:xgeoff/skeleton-plus",
     "atomica": "^0.4.0-alpha",
     "dagre": "^0.8.5",
     "skeleton-css": "^2.0.4"

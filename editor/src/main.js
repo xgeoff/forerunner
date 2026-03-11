@@ -25,6 +25,7 @@ import { exportWorkflow } from "./toml-export.js"
 import { computeLayout } from "./layout.js"
 import "skeleton-css/css/normalize.css"
 import "skeleton-css/css/skeleton.css"
+import "@xgeoff/skeleton-plus/skeleton-plus.css"
 
 const NODE_WIDTH = 220
 const NODE_HEIGHT = 60
@@ -72,6 +73,7 @@ const NODE_META = {
 }
 
 const app = document.querySelector("#app")
+const THEME_STORAGE_KEY = "forerunner-editor-theme"
 let dragState = null
 let panState = null
 let copied = false
@@ -81,11 +83,18 @@ let tomlDraft = ""
 let tomlError = ""
 let tomlDirty = false
 let edgeInspectorState = { edgeId: null, target: "", targetMenuOpen: false }
+let pendingEdgeDraft = null
+let currentTheme = "midnight"
+let surfaceActive = false
+let editingLabelNodeId = null
+let workflowName = "unnamed"
 
 startApp()
 
 function startApp() {
   try {
+    currentTheme = loadTheme()
+    applyTheme(currentTheme)
     bootstrap()
     render()
   } catch (error) {
@@ -106,10 +115,10 @@ function renderError(error) {
   const message = error instanceof Error ? error.message : String(error)
   app.innerHTML = `
     <div class="fatal-screen">
-      <div class="fatal-card">
+      <div class="fatal-card card card--raised">
         <h2>Editor failed to render</h2>
         <p>${escapeHtml(message)}</p>
-        <button id="reload-btn" class="button button-primary">Reload</button>
+        <button id="reload-btn" class="btn btn--primary">Reload</button>
       </div>
     </div>
   `
@@ -122,6 +131,13 @@ function bootstrap() {
   if (Object.keys(nodes.get()).length === 0) {
     SAMPLE_NODES.forEach(([id, type]) => {
       addNode(id, 0, 0, type)
+      const seed = NODE_META[id]
+      if (seed?.handler) {
+        setNodeField(id, "handler", seed.handler)
+      }
+      if (seed?.label) {
+        setNodeField(id, "label", seed.label)
+      }
     })
 
     SAMPLE_EDGES.forEach(([from, to, type, route]) => {
@@ -145,13 +161,13 @@ function render() {
   const selectedEdge = getSelectedEdge()
   const pendingFrom = pendingConnectionFrom.get()
   const startNode = workflowStartNodeId.get() ?? inferStartNode()
-  const toml = exportWorkflow(startNode)
+  const toml = exportWorkflow(startNode, workflowName)
   if (!tomlDirty) {
     tomlDraft = toml
   }
 
   app.innerHTML = `
-    <div class="app-shell dark">
+    <div class="app-shell theme-${currentTheme}">
       <header class="topbar">
         <div class="brand-left">
           <div class="brand-icon">WF</div>
@@ -160,9 +176,14 @@ function render() {
             <p>Visual DSL Editor</p>
           </div>
         </div>
-        <div class="status-pill">
-          <span class="status-star">+</span>
-          Auto-generating TOML configuration
+        <div class="topbar-right">
+          <div class="status-pill">
+            <span class="status-star">+</span>
+            Auto-generating TOML configuration
+          </div>
+          <button class="btn btn--secondary theme-toggle" data-action="toggle-theme">
+            ${currentTheme === "midnight" ? "Light" : "Midnight"}
+          </button>
         </div>
       </header>
 
@@ -170,8 +191,8 @@ function render() {
         <section class="editor-stage">
           <div id="canvas" class="canvas" tabindex="0">
             ${renderCanvasChrome()}
-            ${renderPalette()}
             ${renderInspector(selectedNode)}
+            ${renderPendingEdgeDraftInspector()}
             ${renderEdgeInspector(selectedEdge)}
             <div
               id="scene"
@@ -190,19 +211,19 @@ function render() {
         </div>
 
         <aside class="toml-stage">
-          <div class="toml-panel">
+          <div class="toml-panel card card--raised">
             <div class="toml-header">
               <div class="toml-title">
                 <span class="toml-icon">{ }</span>
                 <strong>Workflow TOML</strong>
               </div>
               <div class="toml-actions">
-                <button class="button secondary-button" data-action="apply-toml">Apply</button>
-                <button class="button ghost-button" data-action="copy-toml">${copied ? "Copied" : "Copy"}</button>
+                <button class="btn btn--secondary" data-action="apply-toml">Apply</button>
+                <button class="btn btn--ghost" data-action="copy-toml">${copied ? "Copied" : "Copy"}</button>
               </div>
             </div>
-            ${tomlError ? `<div class="toml-error">${escapeHtml(tomlError)}</div>` : ""}
-            <textarea id="toml-editor" class="toml-editor" spellcheck="false">${escapeHtml(tomlDraft)}</textarea>
+            ${tomlError ? `<div class="toml-error alert alert--error">${escapeHtml(tomlError)}</div>` : ""}
+            <textarea id="toml-editor" class="toml-editor input" spellcheck="false">${escapeHtml(tomlDraft)}</textarea>
           </div>
         </aside>
       </main>
@@ -215,8 +236,8 @@ function render() {
 function renderCanvasChrome() {
   return `
     <div class="canvas-actions">
-      <button class="button secondary-button" data-action="layout">Auto Layout</button>
-      <button class="button button-primary" data-action="add-node">+</button>
+      <button class="btn btn--secondary" data-action="layout">Auto Layout</button>
+      <button class="btn btn--primary add-node-button" data-action="add-node">+ Add Node</button>
     </div>
 
     <div class="canvas-panel canvas-panel-top-right">
@@ -225,25 +246,7 @@ function renderCanvasChrome() {
       <button class="flow-control-button" data-action="zoom-fit">o</button>
     </div>
 
-    <div class="zoom-controls">
-      <button class="zoom-button" data-action="zoom-in">+</button>
-      <button class="zoom-button" data-action="zoom-out">-</button>
-      <button class="zoom-button" data-action="zoom-fit">[]</button>
-    </div>
-
     ${renderMiniMap()}
-  `
-}
-
-function renderPalette() {
-  return `
-    <div class="node-palette">
-      <div class="palette-title">Palette</div>
-      <div class="palette-item" draggable="true" data-palette-item="node">
-        <span class="palette-icon">+</span>
-        <span>Node</span>
-      </div>
-    </div>
   `
 }
 
@@ -264,7 +267,7 @@ function renderCanvasFooter(selectedNode, selectedEdge, pendingFrom) {
     const label = selectedEdge.type === "route" ? selectedEdge.route : "default"
     return `
       <div class="selection-bar">
-        <span class="selection-label">Selected edge</span>
+        <span class="selection-label">Selected route</span>
         <strong>${selectedEdge.from} -> ${selectedEdge.to}</strong>
         <span class="selection-detail">${label}</span>
       </div>
@@ -282,49 +285,62 @@ function renderCanvasFooter(selectedNode, selectedEdge, pendingFrom) {
   }
 
   return `
-    <div class="selection-bar muted-bar">
+      <div class="selection-bar muted-bar">
       <span class="selection-label">Workflow</span>
-      <strong>Underwriting Flow</strong>
+      <strong>${escapeHtml(workflowName || "unnamed")}</strong>
       <span class="selection-detail">Drag nodes or inspect the generated TOML</span>
     </div>
   `
 }
 
 function renderInspector(node) {
+  if (pendingEdgeDraft) return ""
   if (!node) return ""
 
   const isStart = workflowStartNodeId.get() === node.id
   const isEnd = node.type === "end"
   const handler = node.handler ?? ""
+  const label = node.label ?? ""
 
   return `
-    <div class="node-inspector">
-      <div class="inspector-title">Node</div>
-      <label class="inspector-field">
-        <span>ID</span>
-        <input id="node-id-input" type="text" value="${node.id}" />
-      </label>
-      <label class="inspector-field">
-        <span>Handler</span>
-        <input id="node-handler-input" type="text" value="${handler}" placeholder="tenant.workflow.step" />
-      </label>
-      <label class="inspector-toggle">
-        <input id="node-start-input" type="checkbox" ${isStart ? "checked" : ""} />
-        <span>Start node</span>
-      </label>
-      <label class="inspector-toggle">
-        <input id="node-end-input" type="checkbox" ${isEnd ? "checked" : ""} />
-        <span>End node</span>
-      </label>
-      <div class="inspector-actions">
-        <button class="button secondary-button" id="rename-node-btn">Apply</button>
-        <button class="button ghost-button" id="delete-node-btn">Delete</button>
+    <div class="node-inspector node-${isStart ? "start" : (node.type || "task")} card card--raised">
+      <div class="inspector-head">
+        <div class="inspector-head-icon">${nodeIcon(node.id, node.type)}</div>
+        <div class="inspector-title">${node.label?.trim() || node.id}</div>
+      </div>
+      <div class="inspector-body">
+        <label class="inspector-field">
+          <span>Label</span>
+          <input id="node-label-input" class="input" type="text" value="${escapeHtml(label)}" />
+        </label>
+        <label class="inspector-field">
+          <span>ID</span>
+          <input id="node-id-input" class="input" type="text" value="${escapeHtml(node.id)}" />
+        </label>
+        <label class="inspector-field">
+          <span>Handler</span>
+          <input id="node-handler-input" class="input" type="text" value="${escapeHtml(handler)}" placeholder="tenant.workflow.step" />
+        </label>
+        <label class="inspector-toggle">
+          <input id="node-start-input" type="checkbox" ${isStart ? "checked" : ""} />
+          <span>Start node</span>
+        </label>
+        <label class="inspector-toggle">
+          <input id="node-end-input" type="checkbox" ${isEnd ? "checked" : ""} />
+          <span>End node</span>
+        </label>
+        <div class="inspector-actions">
+          <button class="btn btn--secondary" id="rename-node-btn">Apply</button>
+          <button class="btn btn--secondary" id="cancel-node-btn">Cancel</button>
+          <button class="btn btn--ghost" id="delete-node-btn">Delete</button>
+        </div>
       </div>
     </div>
   `
 }
 
 function renderEdgeInspector(edge) {
+  if (pendingEdgeDraft) return ""
   if (!edge) return ""
 
   if (edgeInspectorState.edgeId !== edge.id) {
@@ -346,34 +362,66 @@ function renderEdgeInspector(edge) {
     .join("")
 
   return `
-    <div class="edge-inspector">
-      <div class="inspector-title">Edge</div>
-      <div class="inspector-readonly">${edge.from} -> ${edge.to}</div>
-      <label class="inspector-field">
-        <span>Target</span>
-        <button class="edge-target-trigger" id="edge-target-trigger" type="button">
-          <span>${edgeInspectorState.target}</span>
-          <span class="edge-target-caret">v</span>
-        </button>
-        ${edgeInspectorState.targetMenuOpen ? `
-          <div class="edge-target-menu">
-            ${targetOptions}
-          </div>
+    <div class="edge-inspector card card--raised">
+      <div class="inspector-head">
+        <div class="inspector-head-icon">${routeIcon()}</div>
+        <div class="inspector-title">Route</div>
+      </div>
+      <div class="inspector-body">
+        <div class="inspector-readonly">${edge.from} -> ${edge.to}</div>
+        <label class="inspector-field">
+          <span>Target</span>
+          <button class="edge-target-trigger btn btn--secondary" id="edge-target-trigger" type="button">
+            <span>${edgeInspectorState.target}</span>
+            <span class="edge-target-caret">v</span>
+          </button>
+          ${edgeInspectorState.targetMenuOpen ? `
+            <div class="edge-target-menu">
+              ${targetOptions}
+            </div>
+          ` : ""}
+        </label>
+        <label class="inspector-field">
+          <span>Type</span>
+          <div class="inspector-static">${edge.type}</div>
+        </label>
+        ${edge.type === "route" ? `
+          <label class="inspector-field">
+            <span>Route name</span>
+            <input id="edge-route-input" class="input" type="text" value="${edge.route ?? ""}" />
+          </label>
         ` : ""}
-      </label>
-      <label class="inspector-field">
-        <span>Type</span>
-        <div class="inspector-static">${edge.type}</div>
-      </label>
-      ${edge.type === "route" ? `
+        <div class="inspector-actions">
+          <button class="btn btn--secondary" id="apply-edge-btn">Apply</button>
+          <button class="btn btn--secondary" id="cancel-edge-btn">Cancel</button>
+          <button class="btn btn--ghost" id="delete-edge-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function renderPendingEdgeDraftInspector() {
+  if (!pendingEdgeDraft) return ""
+
+  return `
+    <div class="edge-inspector pending-edge-inspector card card--raised">
+      <div class="inspector-head">
+        <div class="inspector-head-icon">${routeIcon()}</div>
+        <div class="inspector-title">New Connection</div>
+      </div>
+      <div class="inspector-body">
+        <div class="inspector-readonly">${pendingEdgeDraft.from} -> ${pendingEdgeDraft.to}</div>
         <label class="inspector-field">
           <span>Route name</span>
-          <input id="edge-route-input" type="text" value="${edge.route ?? ""}" />
+          <input id="pending-edge-route-input" class="input" type="text" value="${escapeHtml(pendingEdgeDraft.route ?? "")}" />
         </label>
-      ` : ""}
-      <div class="inspector-actions">
-        <button class="button secondary-button" id="apply-edge-btn">Apply</button>
-        <button class="button ghost-button" id="delete-edge-btn">Delete</button>
+        ${pendingEdgeDraft.error ? `<div class="inspector-error"><span class="badge badge--warning">${escapeHtml(pendingEdgeDraft.error)}</span></div>` : ""}
+        <div class="inspector-hint">Leave blank to create the default continue path.</div>
+        <div class="inspector-actions">
+          <button class="btn btn--secondary" id="apply-pending-edge-btn">Apply</button>
+          <button class="btn btn--secondary" id="cancel-pending-edge-btn">Cancel</button>
+        </div>
       </div>
     </div>
   `
@@ -385,7 +433,6 @@ function renderNodes() {
 
   return Object.values(nodes.get())
     .map((node) => {
-      const meta = NODE_META[node.id] ?? {}
       const isStart = workflowStartNodeId.get() === node.id
       const classes = ["node-card", `node-${node.type || "task"}`]
       if (isStart) classes.push("node-start")
@@ -393,15 +440,18 @@ function renderNodes() {
       if (pendingId === node.id) classes.push("pending")
 
       const icon = nodeIcon(node.id, node.type)
-      const handler = node.handler ?? meta.handler
-      const subline = meta.status ?? handler?.split(".").pop() ?? (isStart ? "start" : (node.type || "task"))
+      const handler = node.handler ?? ""
+      const subline = handler.split(".").pop() || (isStart ? "start" : (node.type || "task"))
+      const title = node.label?.trim() || node.id
 
       return `
         <div class="${classes.join(" ")}" data-node-id="${node.id}" style="left:${node.x}px;top:${node.y}px;width:${NODE_WIDTH}px;height:${NODE_HEIGHT}px">
           <span class="node-handle node-handle-in"></span>
           <div class="node-icon">${icon}</div>
           <div class="node-content">
-            <div class="node-title">${titleize(node.id)}</div>
+            ${editingLabelNodeId === node.id
+              ? `<input class="node-title-input" data-label-editor="${node.id}" type="text" value="${escapeHtml(node.label ?? "")}" placeholder="${escapeHtml(node.id)}" />`
+              : `<div class="node-title">${escapeHtml(title)}</div>`}
             <div class="node-meta">${subline}</div>
           </div>
           ${node.type === "end" ? "" : `<span class="node-handle node-handle-out" data-handle-out="${node.id}"></span>`}
@@ -433,7 +483,7 @@ function renderEdges() {
     const my = (y1 + y2) / 2 - (edge.type === "route" ? 6 : 0)
     const labelMarkup = edge.type === "route"
       ? `
-        <foreignObject x="${mx - 48}" y="${my - 11}" width="96" height="22">
+        <foreignObject x="${mx - 52}" y="${my - 13}" width="104" height="28">
           <div class="edge-label route-label">${edge.route}</div>
         </foreignObject>
       `
@@ -544,6 +594,9 @@ function bindEvents() {
       tomlDraft = event.target.value
       tomlDirty = true
     })
+    tomlEditor.addEventListener("focus", () => {
+      surfaceActive = false
+    })
   }
 
   const canvas = document.querySelector("#canvas")
@@ -555,13 +608,10 @@ function bindEvents() {
     canvas.addEventListener("drop", onCanvasDrop)
   }
 
-  document.querySelectorAll("[data-palette-item]").forEach((el) => {
-    el.addEventListener("dragstart", onPaletteDragStart)
-  })
-
   document.querySelectorAll("[data-node-id]").forEach((el) => {
     el.addEventListener("mousedown", onNodeMouseDown)
     el.addEventListener("click", onNodeClick)
+    el.addEventListener("dblclick", onNodeDoubleClick)
   })
 
   document.querySelectorAll("[data-handle-out]").forEach((el) => {
@@ -573,17 +623,33 @@ function bindEvents() {
   })
 
   bindInspectorEvents()
+  bindPendingEdgeDraftEvents()
   bindEdgeInspectorEvents()
+  bindInlineLabelEditor()
+
+  document.querySelectorAll(".node-inspector input, .node-inspector button, .edge-inspector input, .edge-inspector button, .pending-edge-inspector input, .pending-edge-inspector button").forEach((el) => {
+    el.addEventListener("focus", () => {
+      surfaceActive = false
+    })
+  })
 }
 
 function onAction(action) {
+  if (action === "toggle-theme") {
+    surfaceActive = false
+    toggleTheme()
+    return
+  }
+
   if (action === "add-node") {
+    surfaceActive = true
     createNodeAtViewportCenter()
     requestRender()
     return
   }
 
   if (action === "layout") {
+    surfaceActive = true
     applyAutoLayout()
     fitViewport()
     requestRender()
@@ -591,25 +657,28 @@ function onAction(action) {
   }
 
   if (action === "zoom-in") {
+    surfaceActive = true
     zoomAroundCanvasCenter(1.12)
     requestRender()
     return
   }
 
   if (action === "zoom-out") {
+    surfaceActive = true
     zoomAroundCanvasCenter(1 / 1.12)
     requestRender()
     return
   }
 
   if (action === "zoom-fit") {
+    surfaceActive = true
     fitViewport()
     requestRender()
     return
   }
 
   if (action === "copy-toml") {
-    const text = tomlDraft || exportWorkflow(inferStartNode())
+    const text = tomlDraft || exportWorkflow(inferStartNode(), workflowName)
     navigator.clipboard?.writeText(text).then(() => {
       copied = true
       requestRender()
@@ -623,6 +692,7 @@ function onAction(action) {
   }
 
   if (action === "apply-toml") {
+    surfaceActive = false
     applyTomlDraft()
     return
   }
@@ -635,11 +705,12 @@ function bindInspectorEvents() {
   const applyBtn = document.querySelector("#rename-node-btn")
   if (applyBtn) {
     applyBtn.addEventListener("click", () => {
+      const labelInput = document.querySelector("#node-label-input")
       const idInput = document.querySelector("#node-id-input")
       const handlerInput = document.querySelector("#node-handler-input")
       const startInput = document.querySelector("#node-start-input")
       const endInput = document.querySelector("#node-end-input")
-      if (!idInput || !handlerInput || !startInput || !endInput) return
+      if (!labelInput || !idInput || !handlerInput || !startInput || !endInput) return
 
       const nextId = idInput.value.trim()
       try {
@@ -647,6 +718,7 @@ function bindInspectorEvents() {
           renameNode(selectedNode.id, nextId)
         }
         const resolvedId = nextId || selectedNode.id
+        setNodeField(resolvedId, "label", labelInput.value.trim())
         setNodeField(resolvedId, "handler", handlerInput.value.trim())
         setNodeType(resolvedId, endInput.checked ? "end" : "task")
         if (startInput.checked) {
@@ -654,6 +726,7 @@ function bindInspectorEvents() {
         } else if (workflowStartNodeId.get() === resolvedId) {
           setStartNode(Object.keys(nodes.get()).find((id) => id !== resolvedId) ?? resolvedId)
         }
+        clearSelection()
       } catch (err) {
         window.alert(err.message)
       }
@@ -665,6 +738,14 @@ function bindInspectorEvents() {
   if (deleteBtn) {
     deleteBtn.addEventListener("click", () => {
       deleteSelected()
+      requestRender()
+    })
+  }
+
+  const cancelBtn = document.querySelector("#cancel-node-btn")
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      clearSelection()
       requestRender()
     })
   }
@@ -709,6 +790,8 @@ function bindEdgeInspectorEvents() {
           updates.route = routeInput.value.trim()
         }
         updateEdge(selectedEdge.id, updates)
+        edgeInspectorState = { edgeId: null, target: "", targetMenuOpen: false }
+        clearSelection()
       } catch (err) {
         window.alert(err.message)
       }
@@ -724,6 +807,78 @@ function bindEdgeInspectorEvents() {
       requestRender()
     })
   }
+
+  const cancelBtn = document.querySelector("#cancel-edge-btn")
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      edgeInspectorState = { edgeId: null, target: "", targetMenuOpen: false }
+      clearSelection()
+      requestRender()
+    })
+  }
+}
+
+function bindPendingEdgeDraftEvents() {
+  if (!pendingEdgeDraft) return
+
+  const applyBtn = document.querySelector("#apply-pending-edge-btn")
+  if (applyBtn) {
+    applyBtn.addEventListener("click", () => {
+      try {
+        commitPendingEdgeDraft()
+      } catch (err) {
+        pendingEdgeDraft = {
+          ...pendingEdgeDraft,
+          route: document.querySelector("#pending-edge-route-input")?.value ?? "",
+          error: err instanceof Error ? err.message : String(err)
+        }
+      }
+      requestRender()
+    })
+  }
+
+  const cancelBtn = document.querySelector("#cancel-pending-edge-btn")
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      pendingEdgeDraft = null
+      requestRender()
+    })
+  }
+}
+
+function bindInlineLabelEditor() {
+  const editor = document.querySelector("[data-label-editor]")
+  if (!editor) return
+
+  editor.addEventListener("mousedown", (event) => {
+    event.stopPropagation()
+  })
+
+  editor.addEventListener("click", (event) => {
+    event.stopPropagation()
+  })
+
+  editor.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault()
+      commitInlineLabelEdit(editor.dataset.labelEditor, editor.value)
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault()
+      editingLabelNodeId = null
+      requestRender()
+    }
+  })
+
+  editor.addEventListener("blur", () => {
+    commitInlineLabelEdit(editor.dataset.labelEditor, editor.value)
+  })
+
+  queueMicrotask(() => {
+    editor.focus()
+    editor.select()
+  })
 }
 
 function applyAutoLayout() {
@@ -897,14 +1052,14 @@ function computeMiniViewport(bounds, miniScale, offsetX, offsetY) {
 
 function onCanvasClick(event) {
   if (!isCanvasBackgroundTarget(event.target)) return
-  focusCanvas()
+  surfaceActive = true
   clearSelection()
   requestRender()
 }
 
 function onCanvasMouseDown(event) {
   if (!isCanvasBackgroundTarget(event.target)) return
-  focusCanvas()
+  surfaceActive = true
   if (pendingConnectionFrom.get()) return
 
   panState = {
@@ -917,7 +1072,8 @@ function onCanvasMouseDown(event) {
 
 function onNodeClick(event) {
   event.stopPropagation()
-  focusCanvas()
+  surfaceActive = true
+  if (editingLabelNodeId) return
   const nodeId = event.currentTarget.dataset.nodeId
 
   selectNode(nodeId)
@@ -926,13 +1082,14 @@ function onNodeClick(event) {
 
 function onEdgeClick(event) {
   event.stopPropagation()
-  focusCanvas()
+  surfaceActive = true
   selectEdge(event.currentTarget.dataset.edgeId)
   requestRender()
 }
 
 function onNodeMouseDown(event) {
-  focusCanvas()
+  surfaceActive = true
+  if (editingLabelNodeId) return
   if (event.target instanceof Element && event.target.closest("[data-handle-out]")) return
 
   const nodeId = event.currentTarget.dataset.nodeId
@@ -950,9 +1107,18 @@ function onNodeMouseDown(event) {
   requestRender()
 }
 
+function onNodeDoubleClick(event) {
+  event.stopPropagation()
+  surfaceActive = false
+  const nodeId = event.currentTarget.dataset.nodeId
+  if (!nodeId) return
+  editingLabelNodeId = nodeId
+  requestRender()
+}
+
 function onHandleMouseDown(event) {
   event.stopPropagation()
-  focusCanvas()
+  surfaceActive = true
   const sourceId = event.currentTarget.dataset.handleOut
   if (!sourceId) return
   startConnection(sourceId)
@@ -1001,12 +1167,12 @@ function stopDrag(event) {
     if (nodeTarget) {
       const targetId = nodeTarget.dataset.nodeId
       if (targetId && targetId !== sourceId) {
-        createConnectionFrom(sourceId, targetId)
+        createConnectionDraft(sourceId, targetId)
       }
     } else if (target instanceof Element && isCanvasBackgroundTarget(target)) {
       const point = clientToWorld(event.clientX, event.clientY)
       const createdId = createNodeAt(point.x - NODE_WIDTH / 2, point.y - NODE_HEIGHT / 2)
-      createConnectionFrom(sourceId, createdId)
+      createConnectionDraft(sourceId, createdId)
     }
   } catch (err) {
     window.alert(err.message)
@@ -1018,7 +1184,13 @@ function stopDrag(event) {
 }
 
 function onKeyDown(event) {
-  if (document.activeElement?.id !== "canvas") return
+  if (!surfaceActive) return
+
+  if (event.key === "Escape" && pendingEdgeDraft) {
+    pendingEdgeDraft = null
+    requestRender()
+    return
+  }
 
   if (event.key.toLowerCase() === "a") {
     createNodeAtViewportCenter()
@@ -1088,6 +1260,18 @@ function nodeIcon(id, type) {
   `
 }
 
+function routeIcon() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 7h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      <path d="M10 17h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      <circle cx="6" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+      <circle cx="18" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+      <path d="M13 7c4 0 5 3 5 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+    </svg>
+  `
+}
+
 function createNodeAtViewportCenter() {
   const center = viewportCenterWorld()
   createNodeAt(center.x - NODE_WIDTH / 2, center.y - NODE_HEIGHT / 2)
@@ -1103,20 +1287,11 @@ function createNodeAt(x, y) {
   return id
 }
 
-function focusCanvas() {
-  document.querySelector("#canvas")?.focus()
-}
-
 function viewportCenterWorld() {
   const canvas = document.querySelector("#canvas")
   const rect = canvas?.getBoundingClientRect()
   if (!rect) return { x: SCENE_WIDTH / 2, y: SCENE_HEIGHT / 2 }
   return clientToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2)
-}
-
-function onPaletteDragStart(event) {
-  event.dataTransfer?.setData("text/plain", "node")
-  event.dataTransfer.effectAllowed = "copy"
 }
 
 function onCanvasDragOver(event) {
@@ -1135,16 +1310,29 @@ function onCanvasDrop(event) {
   requestRender()
 }
 
-function createConnectionFrom(sourceId, targetId) {
-  const suggestedRoute = suggestRouteName(sourceId, targetId)
-  const route = window.prompt("Route name (leave blank for default continue)", "")
-  if (route == null) return
-  const trimmedRoute = route.trim()
-  if (!trimmedRoute) {
-    connectNodes(sourceId, targetId, "continue")
-    return
+function createConnectionDraft(sourceId, targetId) {
+  clearSelection()
+  pendingEdgeDraft = {
+    from: sourceId,
+    to: targetId,
+    route: "",
+    error: ""
   }
-  connectNodes(sourceId, targetId, "route", trimmedRoute || suggestedRoute)
+}
+
+function commitPendingEdgeDraft() {
+  if (!pendingEdgeDraft) return
+
+  const routeInput = document.querySelector("#pending-edge-route-input")
+  const routeName = routeInput?.value.trim() ?? pendingEdgeDraft.route ?? ""
+
+  if (!routeName) {
+    connectNodes(pendingEdgeDraft.from, pendingEdgeDraft.to, "continue")
+  } else {
+    connectNodes(pendingEdgeDraft.from, pendingEdgeDraft.to, "route", routeName)
+  }
+
+  pendingEdgeDraft = null
 }
 
 async function applyTomlDraft() {
@@ -1154,6 +1342,7 @@ async function applyTomlDraft() {
     }
     const { loadWorkflow } = await import("./toml-import.js")
     const wf = loadWorkflow(tomlDraft)
+    workflowName = String(wf.workflow ?? "").trim() || "unnamed"
     setStartNode(wf.startNode ?? Object.keys(nodes.get())[0] ?? null)
     tomlError = ""
     tomlDirty = false
@@ -1178,6 +1367,42 @@ function titleize(value) {
   return value
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/^./, (char) => char.toUpperCase())
+}
+
+function loadTheme() {
+  try {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
+    return stored === "light" ? "light" : "midnight"
+  } catch {
+    return "midnight"
+  }
+}
+
+function applyTheme(theme) {
+  if (theme === "light") {
+    document.documentElement.removeAttribute("data-theme")
+    return
+  }
+  document.documentElement.setAttribute("data-theme", "midnight")
+}
+
+function toggleTheme() {
+  currentTheme = currentTheme === "midnight" ? "light" : "midnight"
+  applyTheme(currentTheme)
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, currentTheme)
+  } catch {
+    // Ignore storage failures.
+  }
+  requestRender()
+}
+
+function commitInlineLabelEdit(nodeId, nextLabel) {
+  if (nodeId && nodes.get()[nodeId]) {
+    setNodeField(nodeId, "label", nextLabel.trim())
+  }
+  editingLabelNodeId = null
+  requestRender()
 }
 
 function highlightToml(code) {

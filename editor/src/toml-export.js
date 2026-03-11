@@ -1,6 +1,6 @@
 import { nodes, edges } from "./graph-store.js"
 
-export function exportWorkflow(startNode) {
+export function exportWorkflow(startNode, workflowName = "unnamed") {
   const continueRoutes = {}
   const routing = {}
 
@@ -15,6 +15,7 @@ export function exportWorkflow(startNode) {
   })
 
   const doc = {
+    workflow: workflowName || "unnamed",
     startNode,
     nodes: nodes.get(),
     continue: continueRoutes,
@@ -26,6 +27,7 @@ export function exportWorkflow(startNode) {
 
 function serializeWorkflow(doc) {
   const lines = []
+  lines.push(`workflow = ${quote(doc.workflow || "unnamed")}`)
   lines.push(`startNode = ${quote(doc.startNode)}`)
   lines.push("")
   lines.push("[nodes]")
@@ -37,6 +39,7 @@ function serializeWorkflow(doc) {
       if (node.type && node.type !== "task") {
         lines.push(`type = ${quote(node.type)}`)
       }
+      if (node.label) lines.push(`label = ${quote(node.label)}`)
       if (node.handler) lines.push(`handler = ${quote(node.handler)}`)
       if (node.description) lines.push(`description = ${quote(node.description)}`)
       lines.push("")
