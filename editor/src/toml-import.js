@@ -12,6 +12,7 @@ export function loadWorkflow(tomlText) {
         x: 0,
         y: 0,
         type: node.type === "end" ? "end" : "task",
+        label: node.label ?? "",
         ...node
       }
     ])
