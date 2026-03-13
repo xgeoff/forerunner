@@ -84,10 +84,11 @@ let tomlError = ""
 let tomlDirty = false
 let edgeInspectorState = { edgeId: null, target: "", targetMenuOpen: false }
 let pendingEdgeDraft = null
+let utilityPanel = null
 let currentTheme = "midnight"
 let surfaceActive = false
 let editingLabelNodeId = null
-let workflowName = "unnamed"
+let workflowName = "Underwriting"
 
 startApp()
 
@@ -181,9 +182,6 @@ function render() {
             <span class="status-star">+</span>
             Auto-generating TOML configuration
           </div>
-          <button class="btn btn--secondary theme-toggle" data-action="toggle-theme">
-            ${currentTheme === "midnight" ? "Light" : "Midnight"}
-          </button>
         </div>
       </header>
 
@@ -214,7 +212,13 @@ function render() {
           <div class="toml-panel card card--raised">
             <div class="toml-header">
               <div class="toml-title">
-                <span class="toml-icon">{ }</span>
+                <span class="toml-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M8 5H6.8C5.81 5 5 5.81 5 6.8v2.1c0 .73-.41 1.4-1.06 1.73L3 11l.94.37c.65.33 1.06 1 1.06 1.73v2.1c0 .99.81 1.8 1.8 1.8H8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M16 5h1.2c.99 0 1.8.81 1.8 1.8v2.1c0 .73.41 1.4 1.06 1.73L21 11l-.94.37c-.65.33-1.06 1-1.06 1.73v2.1c0 .99-.81 1.8-1.8 1.8H16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M10 15l4-8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+                  </svg>
+                </span>
                 <strong>Workflow TOML</strong>
               </div>
               <div class="toml-actions">
@@ -236,18 +240,105 @@ function render() {
 function renderCanvasChrome() {
   return `
     <div class="canvas-actions">
-      <button class="btn btn--secondary" data-action="layout">Auto Layout</button>
       <button class="btn btn--primary add-node-button" data-action="add-node">+ Add Node</button>
     </div>
 
     <div class="canvas-panel canvas-panel-top-right">
-      <button class="flow-control-button" data-action="zoom-in">+</button>
-      <button class="flow-control-button" data-action="zoom-out">-</button>
-      <button class="flow-control-button" data-action="zoom-fit">o</button>
+      <button class="flow-control-button" data-action="zoom-in" data-tooltip="Zoom in" aria-label="Zoom in">+</button>
+      <button class="flow-control-button" data-action="zoom-out" data-tooltip="Zoom out" aria-label="Zoom out">-</button>
+      <button class="flow-control-button flow-control-icon" data-action="zoom-fit" data-tooltip="Center workflow" aria-label="Center workflow">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9V4h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M20 9V4h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M4 15v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+      <button class="flow-control-button flow-control-icon" data-action="layout" data-tooltip="Auto-arrange" aria-label="Auto-arrange">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4.5" y="4.5" width="5" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+          <rect x="14.5" y="4.5" width="5" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+          <rect x="9.5" y="14.5" width="5" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+          <path d="M9.5 7h5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+          <path d="M12 9.5v5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+        </svg>
+      </button>
+      <button class="flow-control-button flow-control-icon" data-action="workflow-panel" data-tooltip="Load or save workflow" aria-label="Load or save workflow">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 5.5h9l3 3V18.5H6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+          <path d="M9 5.5v5h6v-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+          <rect x="9" y="14" width="6" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+        </svg>
+      </button>
+      <button class="flow-control-button flow-control-icon" data-action="settings-panel" data-tooltip="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+          <path d="M12 3.8l1 .2.5 1.8 1.7.7 1.5-1 1.4 1.4-1 1.5.7 1.7 1.8.5.2 1-.2 1-1.8.5-.7 1.7 1 1.5-1.4 1.4-1.5-1-1.7.7-.5 1.8-1 .2-1-.2-.5-1.8-1.7-.7-1.5 1-1.4-1.4 1-1.5-.7-1.7-1.8-.5-.2-1 .2-1 1.8-.5.7-1.7-1-1.5 1.4-1.4 1.5 1 1.7-.7.5-1.8z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"></path>
+        </svg>
+      </button>
     </div>
+
+    ${renderUtilityPanel()}
 
     ${renderMiniMap()}
   `
+}
+
+function renderUtilityPanel() {
+  if (utilityPanel === "workflow") {
+    return `
+      <div class="utility-panel card card--raised">
+        <div class="inspector-head">
+          <div class="inspector-head-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 5.5h9l3 3V18.5H6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+              <path d="M9 5.5v5h6v-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+              <rect x="9" y="14" width="6" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+            </svg>
+          </div>
+          <div class="inspector-title">Workflow File</div>
+        </div>
+        <div class="inspector-body">
+          <div class="inspector-readonly">${escapeHtml(workflowName || "unnamed")}</div>
+          <div class="utility-actions">
+            <button class="btn btn--secondary" data-action="load-from-toml">Load from TOML</button>
+            <button class="btn btn--secondary" data-action="download-workflow">Download TOML</button>
+            <button class="btn btn--ghost" data-action="close-utility-panel">Close</button>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  if (utilityPanel === "settings") {
+    return `
+      <div class="utility-panel card card--raised">
+        <div class="inspector-head">
+          <div class="inspector-head-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+              <path d="M12 3.8l1 .2.5 1.8 1.7.7 1.5-1 1.4 1.4-1 1.5.7 1.7 1.8.5.2 1-.2 1-1.8.5-.7 1.7 1 1.5-1.4 1.4-1.5-1-1.7.7-.5 1.8-1 .2-1-.2-.5-1.8-1.7-.7-1.5 1-1.4-1.4 1-1.5-.7-1.7-1.8-.5-.2-1 .2-1 1.8-.5.7-1.7-1-1.5 1.4-1.4 1.5 1 1.7-.7.5-1.8z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+          <div class="inspector-title">Settings</div>
+        </div>
+        <div class="inspector-body">
+          <label class="inspector-field">
+            <span>Theme</span>
+            <div class="utility-actions two-up">
+              <button class="btn ${currentTheme === "light" ? "btn--primary" : "btn--secondary"}" data-action="theme-light">Light</button>
+              <button class="btn ${currentTheme === "midnight" ? "btn--primary" : "btn--secondary"}" data-action="theme-midnight">Midnight</button>
+            </div>
+          </label>
+          <div class="utility-actions">
+            <button class="btn btn--ghost" data-action="close-utility-panel">Close</button>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  return ""
 }
 
 function renderCanvasFooter(selectedNode, selectedEdge, pendingFrom) {
@@ -500,8 +591,8 @@ function renderEdges() {
   return `
     <svg class="edge-layer" width="100%" height="100%" viewBox="0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}" preserveAspectRatio="none">
       <defs>
-        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="5.7" refY="2.6" orient="auto">
-          <polygon points="0 0, 5.7 2.6, 0 5.2" class="edge-arrow"></polygon>
+        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="7.8" refY="5" orient="auto">
+          <path d="M 1 1 L 8 5 L 1 9" class="edge-arrow"></path>
         </marker>
       </defs>
       ${markup}
@@ -627,7 +718,7 @@ function bindEvents() {
   bindEdgeInspectorEvents()
   bindInlineLabelEditor()
 
-  document.querySelectorAll(".node-inspector input, .node-inspector button, .edge-inspector input, .edge-inspector button, .pending-edge-inspector input, .pending-edge-inspector button").forEach((el) => {
+  document.querySelectorAll(".node-inspector input, .node-inspector button, .edge-inspector input, .edge-inspector button, .pending-edge-inspector input, .pending-edge-inspector button, .utility-panel input, .utility-panel button").forEach((el) => {
     el.addEventListener("focus", () => {
       surfaceActive = false
     })
@@ -635,9 +726,59 @@ function bindEvents() {
 }
 
 function onAction(action) {
-  if (action === "toggle-theme") {
+  if (action === "workflow-panel") {
     surfaceActive = false
-    toggleTheme()
+    utilityPanel = utilityPanel === "workflow" ? null : "workflow"
+    requestRender()
+    return
+  }
+
+  if (action === "settings-panel") {
+    surfaceActive = false
+    utilityPanel = utilityPanel === "settings" ? null : "settings"
+    requestRender()
+    return
+  }
+
+  if (action === "close-utility-panel") {
+    surfaceActive = false
+    utilityPanel = null
+    requestRender()
+    return
+  }
+
+  if (action === "theme-light") {
+    surfaceActive = false
+    currentTheme = "light"
+    applyTheme(currentTheme)
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, currentTheme)
+    } catch {}
+    requestRender()
+    return
+  }
+
+  if (action === "theme-midnight") {
+    surfaceActive = false
+    currentTheme = "midnight"
+    applyTheme(currentTheme)
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, currentTheme)
+    } catch {}
+    requestRender()
+    return
+  }
+
+  if (action === "load-from-toml") {
+    surfaceActive = false
+    utilityPanel = null
+    applyTomlDraft()
+    return
+  }
+
+  if (action === "download-workflow") {
+    surfaceActive = false
+    downloadCurrentWorkflow()
     return
   }
 
@@ -763,6 +904,13 @@ function bindEdgeInspectorEvents() {
         targetMenuOpen: !edgeInspectorState.targetMenuOpen
       }
       requestRender()
+    })
+  }
+
+  const targetMenu = document.querySelector(".edge-target-menu")
+  if (targetMenu) {
+    targetMenu.addEventListener("wheel", (event) => {
+      event.stopPropagation()
     })
   }
 
@@ -1186,6 +1334,12 @@ function stopDrag(event) {
 function onKeyDown(event) {
   if (!surfaceActive) return
 
+  if (event.key === "Escape" && utilityPanel) {
+    utilityPanel = null
+    requestRender()
+    return
+  }
+
   if (event.key === "Escape" && pendingEdgeDraft) {
     pendingEdgeDraft = null
     requestRender()
@@ -1394,6 +1548,21 @@ function toggleTheme() {
   } catch {
     // Ignore storage failures.
   }
+  requestRender()
+}
+
+function downloadCurrentWorkflow() {
+  const toml = tomlDraft || exportWorkflow(inferStartNode(), workflowName)
+  const blob = new Blob([toml], { type: "text/plain;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `${(workflowName || "unnamed").trim() || "unnamed"}.toml`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+  utilityPanel = null
   requestRender()
 }
 
