@@ -9,8 +9,6 @@ plugins {
 }
 
 dependencies {
-    api(project(":model"))
-    api(project(":dsl-kotlin"))
     testImplementation(kotlin("test"))
 }
 

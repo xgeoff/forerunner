@@ -6,7 +6,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":model"))
+    api(project(":core"))
     testImplementation(kotlin("test"))
 }
 

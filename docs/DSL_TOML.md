@@ -5,7 +5,7 @@ parser/serializer logic for text-based workflow definitions.
 
 Canonical schema:
 
-- `dsl-toml/SCHEMA.md`
+- `docs/SCHEMA.md`
 
 Current canonical routing keys:
 

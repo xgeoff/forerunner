@@ -19,18 +19,59 @@ License: [MIT](LICENSE)
 
 ---
 
-## Repository Structure
+## Repository Modules
 
-Forerunner is now organized as a multi-module Gradle build:
+Forerunner is organized as a multi-module Gradle build for the JVM components,
+plus a separate web editor project.
 
-- `model` - shared workflow contracts and data types (`Node`, `NodeOutcome`, `Workflow`, `Violation`, `Severity`)
-- `dsl-kotlin` - fluent Kotlin workflow construction (`FlowBuilder`)
-- `dsl-toml` - TOML-based workflow definition parsing and mapping (scaffold)
-- `core` - execution engine (`WorkflowEngine`, `EngineConfig`, `ExecutionResult`)
-- `validator` - validation module scaffold
-- `cli` - CLI module scaffold
-- `editor` - web editor scaffold (Node/Vite style project, not a Gradle module)
-- `examples/workflows` - reusable workflow definition examples
+### `dsl-toml`
+
+TOML-based workflow definition parsing and mapping.
+
+This module holds the text-based DSL work, including the canonical TOML schema
+and parsing/mapping support.
+
+### `core`
+
+Core workflow library.
+
+This module contains the shared workflow model, the Kotlin builder API, and
+the runtime execution layer, including `Node`, `NodeOutcome`, `Workflow`,
+`Violation`, `Severity`, `FlowBuilder`, `WorkflowEngine`, `EngineConfig`, and
+`ExecutionResult`.
+
+### `validator`
+
+Workflow validation module.
+
+This is a Kotlin/JVM module reserved for future structural and semantic
+validation of workflow definitions.
+
+One intended use case is CLI-oriented validation, where workflow definitions
+can be checked without running them.
+
+### `cli`
+
+Command-line tooling.
+
+This module is reserved for CLI-oriented workflow tooling such as validation,
+inspection, and execution helpers.
+
+### `editor`
+
+Web-based workflow editor tool.
+
+This is a separate Node/Vite project rather than a Gradle module. It provides
+the visual workflow editor and TOML editing experience.
+
+The editor is currently built with Atomica and styled with Skeleton CSS plus
+Skeleton-plus.
+
+### `examples/workflows`
+
+Example workflow definitions.
+
+This directory holds reusable example workflows and reference definitions.
 
 Published Maven artifact:
 
@@ -40,7 +81,15 @@ Published Maven artifact:
 
 The text-based workflow format is defined in:
 
-- `dsl-toml/SCHEMA.md`
+- `docs/SCHEMA.md`
+
+Additional project documentation:
+
+- `docs/PUBLISHING.md`
+- `docs/RELEASING.md`
+- `docs/DSL_TOML.md`
+- `docs/EDITOR.md`
+- `docs/EXAMPLES.md`
 
 The canonical schema currently uses:
 

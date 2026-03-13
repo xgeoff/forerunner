@@ -7,7 +7,6 @@ plugins {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":dsl-kotlin"))
     implementation(project(":dsl-toml"))
     implementation(project(":validator"))
     testImplementation(kotlin("test"))

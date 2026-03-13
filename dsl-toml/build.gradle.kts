@@ -6,7 +6,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":model"))
+    api(project(":core"))
     implementation("org.tomlj:tomlj:1.1.1")
     testImplementation(kotlin("test"))
 }

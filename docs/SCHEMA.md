@@ -5,14 +5,17 @@ This is the canonical text schema for Forerunner workflow definitions.
 ## Document Shape
 
 ```toml
+workflow = "policy-underwriting"
 startNode = "validate"
 
 [nodes]
 [nodes.validate]
-type = "task"
+label = "Validate Policy"
+handler = "tenant.policy.validate"
 
 [nodes.finalize]
-type = "task"
+type = "end"
+label = "Finalize"
 
 [continue]
 validate = "finalize"
@@ -22,6 +25,9 @@ to = "manualReview"
 ```
 
 ## Fields
+
+- `workflow` (string, optional, default `"unnamed"`)
+  - Human-readable workflow name shown by tooling such as the editor.
 
 - `startNode` (string, required)
   - Identifier of the first node to execute.
@@ -42,6 +48,8 @@ to = "manualReview"
 Current canonical node table fields:
 
 - `type` (string, optional, default `"task"`)
+- `label` (string, optional)
+- `handler` (string, optional)
 - `description` (string, optional)
 - `metadata` (table, optional, free-form)
 
@@ -56,4 +64,6 @@ Current canonical node table fields:
 ## Notes
 
 - The TOML schema intentionally uses `continue` (not `continueTo`).
+- If `workflow` is omitted, tooling should treat the workflow name as `unnamed`.
+- If `label` is omitted, tooling may fall back to the node id for display.
 - Runtime model mapping from TOML to engine graph is handled by `dsl-toml` and downstream validator/CLI layers.
