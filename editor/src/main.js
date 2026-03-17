@@ -325,9 +325,21 @@ function renderUtilityPanel() {
         <div class="inspector-body">
           <label class="inspector-field">
             <span>Theme</span>
-            <div class="utility-actions two-up">
-              <button class="btn ${currentTheme === "light" ? "btn--primary" : "btn--secondary"}" data-action="theme-light">Light</button>
-              <button class="btn ${currentTheme === "midnight" ? "btn--primary" : "btn--secondary"}" data-action="theme-midnight">Midnight</button>
+            <div class="theme-switch-row" role="group" aria-label="Theme">
+              <button class="theme-side-icon ${currentTheme === "light" ? "is-active" : ""}" data-action="theme-light" aria-label="Light theme">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                  <path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9M18.5 18.5l-1.9-1.9M7.4 7.4L5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+              </button>
+              <button class="theme-switch ${currentTheme === "midnight" ? "is-midnight" : "is-light"}" data-action="toggle-theme" aria-label="Toggle theme">
+                <span class="theme-switch-thumb" aria-hidden="true"></span>
+              </button>
+              <button class="theme-side-icon ${currentTheme === "midnight" ? "is-active" : ""}" data-action="theme-midnight" aria-label="Midnight theme">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M16.5 3.5a7.8 7.8 0 1 0 4 14.5 8.6 8.6 0 0 1-4.8 1.4A8.4 8.4 0 0 1 7.3 11a8.6 8.6 0 0 1 9.2-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                </svg>
+              </button>
             </div>
           </label>
           <div class="utility-actions">
