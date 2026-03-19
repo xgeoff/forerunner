@@ -85,6 +85,7 @@ The text-based workflow format is defined in:
 
 Additional project documentation:
 
+- `docs/index.html`
 - `docs/PUBLISHING.md`
 - `docs/RELEASING.md`
 - `docs/DSL_TOML.md`
