@@ -128,10 +128,6 @@ body {
   shape-rendering: geometricPrecision;
 }
 
-.file-index .nav-icon {
-  transform: translateY(1px);
-}
-
 .nav-label {
   min-width: 0;
 }
