@@ -1,14 +1,30 @@
-# TOML Workflow Schema (Canonical)
+# Canonical TOML Schema
 
-This is the canonical text schema for Forerunner workflow definitions.
+> The TOML schema is the canonical text representation for Forerunner workflows.
+> It is intended for source-controlled workflow definitions, editor round-tripping,
+> and future CLI/validator tooling.
 
-## Document Shape
+## Purpose
+
+The schema defines how a workflow is represented outside the runtime engine.
+
+It focuses on:
+
+- a stable workflow identifier
+- a required starting node
+- node definitions keyed by id
+- fallback routing through `continue`
+- named routing through `routing`
+
+The schema intentionally uses `continue` in the text form even though the runtime
+model uses `continueTo` internally.
+
+## Minimal Shape
 
 ```toml
 workflow = "policy-underwriting"
 startNode = "validate"
 
-[nodes]
 [nodes.validate]
 label = "Validate Policy"
 handler = "tenant.policy.validate"
@@ -24,46 +40,136 @@ validate = "finalize"
 to = "manualReview"
 ```
 
-## Fields
+## Root Fields
 
-- `workflow` (string, optional, default `"unnamed"`)
-  - Human-readable workflow name shown by tooling such as the editor.
+### `workflow`
 
-- `startNode` (string, required)
-  - Identifier of the first node to execute.
+```toml
+workflow = "policy-underwriting"
+```
 
-- `nodes` (table, required)
-  - Keys are node ids.
-  - Values are node definition tables.
+- Type: `string`
+- Required: no
+- Default: `"unnamed"`
 
-- `continue` (table, optional)
-  - Mapping of `fromNodeId -> toNodeId` used for fallback routing when a node returns `Continue`.
+This is the human-readable workflow name used by tooling such as the editor.
 
-- `routing` (table, optional)
-  - Nested mapping for named conditional routes.
-  - Shape: `routing.<fromNodeId>.<routeName>.to = "<targetNodeId>"`.
+### `startNode`
 
-## Node Definition
+```toml
+startNode = "validate"
+```
 
-Current canonical node table fields:
+- Type: `string`
+- Required: yes
 
-- `type` (string, optional, default `"task"`)
-- `label` (string, optional)
-- `handler` (string, optional)
-- `description` (string, optional)
-- `metadata` (table, optional, free-form)
+This must match one of the node identifiers defined under `[nodes]`.
+
+## Node Definitions
+
+Nodes live under the root `[nodes]` table.
+
+Each key under `[nodes]` becomes the node id.
+
+```toml
+[nodes.review]
+label = "Manual Review"
+handler = "tenant.review.manual"
+```
+
+### Supported Node Fields
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `type` | string | no | Defaults to `task`; currently `end` is the meaningful non-default type in the editor |
+| `label` | string | no | Display label used by tooling |
+| `handler` | string | no | Implementation-oriented handler name |
+| `description` | string | no | Human-facing descriptive text |
+| `metadata` | table | no | Free-form tool metadata |
+
+### `type`
+
+If omitted, the node should be treated as a normal `task` node.
+
+```toml
+[nodes.issue]
+type = "end"
+```
+
+### `label`
+
+`label` is the preferred display name for tooling.
+
+```toml
+[nodes.creditCheck]
+label = "Credit Check"
+```
+
+If `label` is omitted, tooling may fall back to the node id.
+
+## Continue Routing
+
+Fallback routing is defined under `[continue]`.
+
+```toml
+[continue]
+validate = "finalize"
+```
+
+This maps:
+
+- `fromNodeId -> toNodeId`
+
+It is used when a node returns a `Continue` outcome in the runtime model.
+
+## Named Routing
+
+Named routing is defined under nested `routing` tables.
+
+```toml
+[routing.validate.highRisk]
+to = "manualReview"
+```
+
+This represents a named branch:
+
+- from node: `validate`
+- route name: `highRisk`
+- target: `manualReview`
+
+### Shape
+
+```toml
+[routing.<fromNodeId>.<routeName>]
+to = "<targetNodeId>"
+```
+
+This is the text-based equivalent of an explicit `Next`-style branch.
 
 ## Validation Rules
 
-- `startNode` must exist in `nodes`.
-- Every `continue` target must exist in `nodes`.
-- Every `routing.*.*.to` target must exist in `nodes`.
-- Node ids are case-sensitive.
-- Duplicate node ids are invalid.
+The current canonical validation rules are:
 
-## Notes
+- `startNode` must exist in `nodes`
+- every `continue` target must exist in `nodes`
+- every `routing.*.*.to` target must exist in `nodes`
+- node ids are case-sensitive
+- duplicate node ids are invalid
 
-- The TOML schema intentionally uses `continue` (not `continueTo`).
-- If `workflow` is omitted, tooling should treat the workflow name as `unnamed`.
-- If `label` is omitted, tooling may fall back to the node id for display.
-- Runtime model mapping from TOML to engine graph is handled by `dsl-toml` and downstream validator/CLI layers.
+## Tooling Expectations
+
+The current Forerunner tooling expects:
+
+- omitted `workflow` => `unnamed`
+- omitted node `type` => `task`
+- omitted `label` => node id may be used for display
+
+## Mapping to Runtime
+
+The TOML schema is not the runtime type model itself.
+
+Instead:
+
+- `dsl-toml` parses the text definition
+- runtime graph structures are built from that parsed document
+- the editor uses this schema as its editable text representation

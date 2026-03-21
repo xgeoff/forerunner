@@ -1,12 +1,18 @@
 :root {
   color-scheme: dark;
-  --site-bg: #071018;
-  --site-panel: #0d1a26;
-  --site-panel-2: #102131;
-  --site-line: rgba(123, 215, 255, 0.16);
+  --site-bg: #060c12;
+  --site-bg-2: #0a141d;
+  --site-panel: rgba(10, 21, 31, 0.9);
+  --site-panel-strong: rgba(13, 26, 38, 0.98);
+  --site-line: rgba(123, 215, 255, 0.15);
+  --site-line-strong: rgba(123, 215, 255, 0.24);
   --site-text: #eaf6ff;
-  --site-muted: #98afbf;
+  --site-muted: #97afbf;
   --site-accent: #7bd7ff;
+  --site-accent-2: #5ba8ff;
+  --site-shadow: 0 0 0 1px rgba(123, 215, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.28);
+  --site-radius: 22px;
+  --site-radius-sm: 14px;
 }
 
 * {
@@ -18,101 +24,264 @@ html, body {
 }
 
 body {
-  font-family: Inter, 'Raleway', system-ui, -apple-system, sans-serif;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(91, 168, 255, 0.14), transparent 24%),
-    linear-gradient(180deg, #09131d 0%, var(--site-bg) 46%, #050b11 100%);
+    radial-gradient(circle at top left, rgba(91, 168, 255, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(123, 215, 255, 0.12), transparent 18%),
+    linear-gradient(180deg, var(--site-bg-2) 0%, var(--site-bg) 44%, #04080d 100%);
   color: var(--site-text);
   margin: 0;
 }
 
+.site-frame {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(123, 215, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123, 215, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.12));
+  opacity: 0.4;
+}
+
 .shell {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .sidebar {
-  background: linear-gradient(180deg, rgba(9, 18, 27, 0.98), rgba(7, 16, 24, 0.98));
-  color: var(--site-text);
-  padding: 2rem 1.25rem;
+  padding: 26px 18px;
   border-right: 1px solid var(--site-line);
+  background: linear-gradient(180deg, rgba(8, 18, 27, 0.92), rgba(7, 15, 22, 0.96));
+}
+
+.sidebar-card {
+  position: sticky;
+  top: 18px;
+  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(12, 24, 35, 0.95), rgba(9, 19, 28, 0.96));
+  border: 1px solid var(--site-line);
+  box-shadow: var(--site-shadow);
+}
+
+.sidebar-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  border: 1px solid var(--site-line-strong);
+  color: #c2e6f8;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .sidebar h1 {
-  margin: 0 0 1.25rem;
-  font-size: 1.15rem;
-  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
 }
 
-.sidebar a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.sidebar__group > ul {
-  margin: 0.5rem 0 0.5rem 1rem;
-  padding: 0;
-  list-style: none;
-}
-
-.sidebar__group > span {
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+.sidebar-summary {
+  margin: 0 0 16px;
   color: var(--site-muted);
+  line-height: 1.65;
+  font-size: 0.95rem;
 }
 
-.sidebar ul,
-.sidebar li {
+.sidebar-repo {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  border: 1px solid var(--site-line);
+  background: rgba(123, 215, 255, 0.06);
+  color: var(--site-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sidebar-repo:hover {
+  background: rgba(123, 215, 255, 0.12);
+  color: #ffffff;
+}
+
+.sidebar-nav ul,
+.sidebar-nav li {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.sidebar li + li {
-  margin-top: 0.55rem;
+.sidebar-nav li + li {
+  margin-top: 0.5rem;
+}
+
+.sidebar__group > ul {
+  margin: 0.55rem 0 0.55rem 0.9rem;
+}
+
+.sidebar__group > span {
+  display: block;
+  margin: 0.7rem 0 0.35rem;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--site-muted);
 }
 
 .sidebar .file a {
   display: block;
-  padding: 0.55rem 0.7rem;
-  border-radius: 10px;
+  padding: 0.72rem 0.78rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
   color: #d9edf8;
+  text-decoration: none;
+  transition: 180ms ease;
 }
 
 .sidebar .file a:hover {
-  background: rgba(123, 215, 255, 0.1);
+  background: rgba(123, 215, 255, 0.08);
+  border-color: rgba(123, 215, 255, 0.12);
   color: #ffffff;
+  transform: translateX(2px);
 }
 
 main.container {
   min-width: 0;
-  padding: 2.5rem;
-  overflow-x: hidden;
+  padding: 28px 28px 48px;
+}
+
+.content-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid var(--site-line);
+  background: linear-gradient(180deg, rgba(8, 18, 27, 0.72), rgba(7, 15, 22, 0.78));
+  box-shadow: var(--site-shadow);
 }
 
 .prose {
   color: var(--site-text);
 }
 
+.prose > :first-child {
+  margin-top: 0;
+}
+
 .prose h1,
 .prose h2,
 .prose h3 {
-  font-weight: 600;
   color: var(--site-text);
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.prose h1 {
+  margin: 0 0 1.1rem;
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  font-weight: 800;
+}
+
+.prose h2 {
+  margin: 2rem 0 0.8rem;
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+  font-weight: 700;
+  padding-top: 0.25rem;
+}
+
+.prose h3 {
+  margin: 1.4rem 0 0.65rem;
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
 .prose p,
-.prose li {
+.prose li,
+.prose blockquote {
   color: #c7d9e5;
-  line-height: 1.7;
+  line-height: 1.76;
+  font-size: 1rem;
 }
 
-.prose code,
+.prose ul,
+.prose ol {
+  padding-left: 1.25rem;
+}
+
+.prose a {
+  color: var(--site-accent);
+  text-decoration: none;
+}
+
+.prose a:hover {
+  color: #c4efff;
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--site-line);
+  margin: 2rem 0;
+}
+
+.prose code {
+  padding: 0.16rem 0.36rem;
+  border-radius: 8px;
+  background: rgba(123, 215, 255, 0.08);
+  color: #dff5ff;
+  font-size: 0.92em;
+}
+
 .prose pre {
-  max-width: 100%;
+  margin: 1rem 0 1.35rem;
+  padding: 1rem 1.05rem;
+  border-radius: 16px;
+  border: 1px solid var(--site-line);
+  background: rgba(4, 10, 15, 0.92);
   overflow-x: auto;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.prose pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 1.4rem;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--site-line);
+}
+
+.prose th,
+.prose td {
+  padding: 0.82rem 0.9rem;
+  border-bottom: 1px solid rgba(123, 215, 255, 0.08);
+  text-align: left;
+}
+
+.prose th {
+  background: rgba(123, 215, 255, 0.06);
+  color: #dff5ff;
+}
+
+.prose blockquote {
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  border-left: 3px solid var(--site-accent);
+  background: rgba(123, 215, 255, 0.05);
+  border-radius: 0 12px 12px 0;
 }
 
 .prose img,
@@ -122,38 +291,37 @@ main.container {
   max-width: 100%;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 980px) {
   .shell {
     grid-template-columns: 1fr;
   }
 
   .sidebar {
+    padding: 16px;
     border-right: 0;
     border-bottom: 1px solid var(--site-line);
-    padding: 1.25rem 1rem 1rem;
   }
 
-  .sidebar h1 {
-    margin-bottom: 0.85rem;
+  .sidebar-card {
+    position: static;
   }
 
-  .sidebar ul {
+  .sidebar-nav ul {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
 
-  .sidebar li {
+  .sidebar-nav li {
     margin-top: 0;
   }
 
-  .sidebar .file a {
-    padding: 0.5rem 0.65rem;
-    background: rgba(123, 215, 255, 0.07);
+  main.container {
+    padding: 18px 16px 32px;
   }
 
-  main.container {
-    padding: 1.5rem 1rem 2rem;
+  .content-shell {
+    padding: 18px;
   }
 }
 
@@ -163,27 +331,34 @@ main.container {
   }
 
   .sidebar {
-    padding: 1rem 0.85rem 0.85rem;
+    padding: 12px;
   }
 
-  .sidebar h1 {
-    font-size: 1rem;
+  .sidebar-card {
+    padding: 14px;
+    border-radius: 16px;
   }
 
-  .sidebar ul {
-    gap: 0.45rem;
+  .sidebar-summary {
+    font-size: 0.92rem;
   }
 
   .sidebar .file a {
+    padding: 0.62rem 0.68rem;
     font-size: 0.92rem;
   }
 
   main.container {
-    padding: 1rem 0.85rem 1.6rem;
+    padding: 12px 10px 24px;
+  }
+
+  .content-shell {
+    padding: 14px;
+    border-radius: 18px;
   }
 
   .prose h1 {
-    font-size: clamp(1.9rem, 8vw, 2.4rem);
+    font-size: clamp(2rem, 9vw, 2.6rem);
   }
 
   .prose h2 {
@@ -191,6 +366,12 @@ main.container {
   }
 
   .prose h3 {
-    font-size: 1.05rem;
+    font-size: 1.02rem;
+  }
+
+  .prose p,
+  .prose li,
+  .prose blockquote {
+    font-size: 0.98rem;
   }
 }

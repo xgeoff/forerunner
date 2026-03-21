@@ -7,69 +7,130 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/skeleton.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="images/favicon-32.png">
 </head>
 <body>
+<div class="site-frame"></div>
 <div class="shell">
     
-<div class="sidebar">
-    <h1>Forerunner</h1>
-    <ul>
-    
-        
+<aside class="sidebar">
+    <div class="sidebar-card">
+        <div class="sidebar-eyebrow">Documentation</div>
+        <h1>Forerunner</h1>
+        <p class="sidebar-summary">
+            Deterministic workflow execution, text-based definitions, and a visual editor.
+        </p>
+        <a class="sidebar-repo" href="https://github.com/xgeoff/forerunner">Repository</a>
+        <nav class="sidebar-nav">
+            <ul>
+            
+                
 
 
 <li class="file"><a href="/forerunner/DSL_TOML.html">TOML DSL</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/EDITOR.html">Editor</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/EXAMPLES.html">Examples</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/index.html">Documentation Home</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/SCHEMA.html">Schema</a></li>
 
 
-    
-    </ul>
-</div>
+            
+            </ul>
+        </nav>
+    </div>
+</aside>
 
     <main class="container prose">
+        <div class="content-shell">
 <h1 id="workflow-examples">Workflow Examples</h1>
-<p>Reusable TOML workflow examples.</p>
-<p>Canonical format:</p>
+<blockquote>
+<p>Example workflows are reference material for schema design, editor behavior,
+and future validation and CLI workflows.</p>
+</blockquote>
+<h2 id="purpose">Purpose</h2>
+<p>The examples directory exists to provide concrete workflow definitions that can be:</p>
 <ul>
-<li><code>SCHEMA.md</code></li>
+<li>opened in the editor</li>
+<li>used as schema references</li>
+<li>used as test fixtures later</li>
+<li>shared as starting points for real workflow design</li>
 </ul>
+<h2 id="canonical-example-source">Canonical Example Source</h2>
 <p>Starter example:</p>
 <ul>
 <li><code>examples/workflows/canonical-workflow.toml</code></li>
 </ul>
+<p>Schema reference:</p>
+<ul>
+<li><a href="SCHEMA.html">Schema</a></li>
+</ul>
+<h2 id="what-makes-a-good-example">What Makes a Good Example</h2>
+<p>A useful example workflow should demonstrate at least one of the following:</p>
+<ul>
+<li>linear <code>continue</code> routing</li>
+<li>explicit named routes under <code>routing</code></li>
+<li>start-node declaration</li>
+<li>end-node usage</li>
+<li>readable labels and handler names</li>
+</ul>
+<h2 id="example-shape">Example Shape</h2>
+<pre><code class="language-toml">workflow = "underwriting"
+startNode = "underwrite"
 
+[nodes.underwrite]
+label = "Underwrite"
+handler = "tenant.underwriting.evaluate"
+
+[nodes.issue]
+type = "end"
+label = "Issue"
+
+[continue]
+underwrite = "issue"
+</code></pre>
+<h2 id="intended-evolution">Intended Evolution</h2>
+<p>As the Forerunner ecosystem grows, the examples set should become more varied.</p>
+<p>Likely future categories include:</p>
+<ul>
+<li>simple linear workflows</li>
+<li>branching validation workflows</li>
+<li>pricing or underwriting flows</li>
+<li>validator-focused invalid examples</li>
+<li>editor round-trip fixtures</li>
+</ul>
+<h2 id="recommendation">Recommendation</h2>
+<p>Treat example workflows as product assets, not throwaway samples.</p>
+<p>They are the fastest way to communicate how the system is meant to be used.</p>
+
+        </div>
     </main>
 </div>
 </body>

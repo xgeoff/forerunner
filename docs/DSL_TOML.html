@@ -7,71 +7,152 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/skeleton.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="images/favicon-32.png">
 </head>
 <body>
+<div class="site-frame"></div>
 <div class="shell">
     
-<div class="sidebar">
-    <h1>Forerunner</h1>
-    <ul>
-    
-        
+<aside class="sidebar">
+    <div class="sidebar-card">
+        <div class="sidebar-eyebrow">Documentation</div>
+        <h1>Forerunner</h1>
+        <p class="sidebar-summary">
+            Deterministic workflow execution, text-based definitions, and a visual editor.
+        </p>
+        <a class="sidebar-repo" href="https://github.com/xgeoff/forerunner">Repository</a>
+        <nav class="sidebar-nav">
+            <ul>
+            
+                
 
 
 <li class="file"><a href="/forerunner/DSL_TOML.html">TOML DSL</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/EDITOR.html">Editor</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/EXAMPLES.html">Examples</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/index.html">Documentation Home</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/SCHEMA.html">Schema</a></li>
 
 
-    
-    </ul>
-</div>
+            
+            </ul>
+        </nav>
+    </div>
+</aside>
 
     <main class="container prose">
-<h1 id="dsl-toml">dsl-toml</h1>
-<p>This module defines the canonical TOML workflow schema and will host
-parser/serializer logic for text-based workflow definitions.</p>
-<p>Canonical schema:</p>
+        <div class="content-shell">
+<h1 id="toml-dsl">TOML DSL</h1>
+<blockquote>
+<p>The TOML DSL is the text-based authoring surface for Forerunner workflows.
+It complements the runtime API and the visual editor rather than replacing them.</p>
+</blockquote>
+<h2 id="why-it-exists">Why It Exists</h2>
+<p>Forerunner workflows can be defined in code, but there are cases where a text
+format is more practical:</p>
 <ul>
-<li><code>SCHEMA.md</code></li>
+<li>storing workflows in source control</li>
+<li>reviewing workflow changes in pull requests</li>
+<li>sharing workflow definitions across tools</li>
+<li>loading workflows in the editor</li>
+<li>future CLI-based validation and inspection</li>
 </ul>
-<p>Current canonical routing keys:</p>
+<p>The TOML DSL is intended to be the canonical text format for those workflows.</p>
+<h2 id="relationship-to-the-runtime">Relationship to the Runtime</h2>
+<p>The TOML DSL is not a separate execution model.</p>
+<p>It maps into the same conceptual workflow structure used by the engine:</p>
+<ul>
+<li>a workflow name</li>
+<li>a start node</li>
+<li>a node map</li>
+<li>fallback routing</li>
+<li>named routing</li>
+</ul>
+<p>That means the TOML form is a serialization and authoring layer, not a second runtime.</p>
+<h2 id="canonical-routing-terms">Canonical Routing Terms</h2>
+<p>The current canonical routing keys are:</p>
 <ul>
 <li><code>continue</code> for fallback routing entries</li>
 <li><code>routing</code> for named branch routing entries</li>
 </ul>
+<p>This naming is intentional.</p>
+<ul>
+<li><code>continue</code> is the textual DSL representation</li>
+<li><code>continueTo</code> is the runtime-side graph representation inside the engine model</li>
+</ul>
+<h2 id="example">Example</h2>
+<pre><code class="language-toml">workflow = "underwriting"
+startNode = "underwrite"
 
+[nodes.underwrite]
+label = "Underwrite"
+handler = "tenant.underwriting.evaluate"
+
+[nodes.issue]
+type = "end"
+label = "Issue Policy"
+
+[continue]
+underwrite = "issue"
+</code></pre>
+<h2 id="what-lives-here">What Lives Here</h2>
+<p>The TOML DSL layer is responsible for:</p>
+<ul>
+<li>canonical workflow text structure</li>
+<li>parsing and mapping support</li>
+<li>schema alignment with the editor</li>
+<li>future compatibility with validator and CLI tooling</li>
+</ul>
+<h2 id="current-scope">Current Scope</h2>
+<p>At the moment, the TOML DSL work is centered around:</p>
+<ul>
+<li>the canonical schema</li>
+<li>workflow import/export alignment with the editor</li>
+<li>stable routing terminology</li>
+</ul>
+<p>The schema reference lives here:</p>
+<ul>
+<li><a href="SCHEMA.html">Schema</a></li>
+</ul>
+<h2 id="intended-ecosystem-role">Intended Ecosystem Role</h2>
+<p>The TOML DSL is meant to be the common interchange format between:</p>
+<ul>
+<li>source-controlled workflow definitions</li>
+<li>the visual editor</li>
+<li>future validator tooling</li>
+<li>future CLI workflows</li>
+</ul>
+<p>That makes it the natural textual contract for the broader Forerunner toolchain.</p>
+
+        </div>
     </main>
 </div>
 </body>

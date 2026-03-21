@@ -7,61 +7,270 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/skeleton.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="images/favicon-32.png">
 </head>
 <body>
+<div class="site-frame"></div>
 <div class="shell">
     
-<div class="sidebar">
-    <h1>Forerunner</h1>
-    <ul>
-    
-        
+<aside class="sidebar">
+    <div class="sidebar-card">
+        <div class="sidebar-eyebrow">Documentation</div>
+        <h1>Forerunner</h1>
+        <p class="sidebar-summary">
+            Deterministic workflow execution, text-based definitions, and a visual editor.
+        </p>
+        <a class="sidebar-repo" href="https://github.com/xgeoff/forerunner">Repository</a>
+        <nav class="sidebar-nav">
+            <ul>
+            
+                
 
 
 <li class="file"><a href="/forerunner/DSL_TOML.html">TOML DSL</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/EDITOR.html">Editor</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/EXAMPLES.html">Examples</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/index.html">Documentation Home</a></li>
 
 
-    
-        
+            
+                
 
 
 <li class="file"><a href="/forerunner/SCHEMA.html">Schema</a></li>
 
 
-    
-    </ul>
-</div>
+            
+            </ul>
+        </nav>
+    </div>
+</aside>
 
     <main class="container prose">
-<h1 id="editor-scaffold">Editor Scaffold</h1>
-<p>This folder is reserved for the web-based workflow editor.</p>
+        <div class="content-shell">
+<h1 id="workflow-editor">Workflow Editor</h1>
+<p>The Forerunner editor is a web-based tool for building workflows visually while
+keeping the canonical TOML definition in view. It is designed for graph editing,
+route inspection, and TOML round-tripping rather than backend-connected runtime
+operations.</p>
+<h2 id="current-scope">Current Scope</h2>
+<p>The editor is currently a local-first workflow design tool. It supports:</p>
+<ul>
+<li>visual graph editing</li>
+<li>TOML editing and apply-back-to-graph behavior</li>
+<li>node and route inspectors</li>
+<li>theme switching</li>
+<li>workflow import/export from the in-browser model</li>
+<li>automatic graph layout and viewport controls</li>
+</ul>
+<p>It does <strong>not</strong> currently depend on backend services. File-oriented and settings
+workflows are local UI features.</p>
+<h2 id="implementation-stack">Implementation Stack</h2>
+<p>The editor lives in the <code>editor/</code> directory and is built as a separate Node/Vite
+project.</p>
+<h3 id="ui-and-state">UI and State</h3>
+<ul>
+<li><strong>Atomica</strong> is used for the UI/state layer.</li>
+<li>The editor keeps graph state in browser memory and re-renders from that state.</li>
+</ul>
+<h3 id="styling-and-layout">Styling and Layout</h3>
+<ul>
+<li><strong>Skeleton CSS</strong> provides the basic CSS foundation.</li>
+<li><strong>Skeleton-plus</strong> provides the higher-level visual shell and component styling.</li>
+</ul>
+<h3 id="workflow-representation">Workflow Representation</h3>
+<p>The editor works from the same conceptual pieces as the runtime:</p>
+<ul>
+<li>nodes</li>
+<li>routes</li>
+<li>start node</li>
+<li>TOML workflow metadata</li>
+</ul>
+<p>Its internal graph state is then exported into the canonical TOML schema.</p>
+<h2 id="core-editing-model">Core Editing Model</h2>
+<h3 id="nodes">Nodes</h3>
+<p>Nodes are created as plain workflow nodes. By default, a new node is a <code>task</code>.</p>
+<p>Current node configuration fields include:</p>
+<ul>
+<li><code>id</code></li>
+<li><code>label</code></li>
+<li><code>handler</code></li>
+<li><code>type</code></li>
+</ul>
+<p>At the moment, the relevant node types in the editor are:</p>
+<ul>
+<li><code>task</code></li>
+<li><code>end</code></li>
+</ul>
+<p>The workflow start node is tracked separately at the workflow level.</p>
+<h3 id="start-node">Start Node</h3>
+<p>The first created node becomes the workflow start node automatically.</p>
+<p>A different node may later be marked as the start node in the node inspector.
+When that happens, the previously selected start node is demoted back to a
+normal task-style node.</p>
+<h3 id="routes">Routes</h3>
+<p>Routes are created by dragging from a node handle.</p>
+<p>The editor currently supports two route forms:</p>
+<ul>
+<li><code>continue</code></li>
+<li>named <code>route</code></li>
+</ul>
+<p>Behavior:</p>
+<ul>
+<li>if the route name is left blank, the connection becomes a <code>continue</code></li>
+<li>if a route name is provided, the connection becomes a named route</li>
+</ul>
+<p>The editor enforces the current graph rules during route creation and editing.
+For example, a node may not have more than one <code>continue</code> route.</p>
+<h2 id="canvas-interaction">Canvas Interaction</h2>
+<h3 id="viewport-controls">Viewport Controls</h3>
+<p>The editor supports:</p>
+<ul>
+<li>zoom in</li>
+<li>zoom out</li>
+<li>center workflow</li>
+<li>auto-arrange</li>
+</ul>
+<p>The current canvas also supports:</p>
+<ul>
+<li>panning</li>
+<li>minimap display</li>
+<li>route drag creation</li>
+<li>node dragging</li>
+</ul>
+<h3 id="node-creation">Node Creation</h3>
+<p>Nodes can be created by:</p>
+<ul>
+<li>the <code>Add Node</code> control</li>
+<li>drag-based graph extension when creating a route to empty space</li>
+</ul>
+<p>The first created node becomes the workflow start node by default.</p>
+<h3 id="selection-model">Selection Model</h3>
+<p>The editor has separate selection behavior for:</p>
+<ul>
+<li>nodes</li>
+<li>routes</li>
+<li>workflow context</li>
+</ul>
+<p>The footer area of the canvas reflects the current selection context.</p>
+<h2 id="inspectors">Inspectors</h2>
+<h3 id="node-inspector">Node Inspector</h3>
+<p>Selecting a node opens the node inspector.</p>
+<p>The node inspector currently supports:</p>
+<ul>
+<li>editing node id</li>
+<li>editing node label</li>
+<li>editing node handler</li>
+<li>marking a node as the workflow start node</li>
+<li>marking a node as an end node</li>
+<li>deleting the node</li>
+</ul>
+<p>Apply/Cancel behavior is explicit. Inspector changes are not committed until
+applied.</p>
+<h3 id="route-inspector">Route Inspector</h3>
+<p>Selecting a route opens the route inspector.</p>
+<p>The route inspector currently supports:</p>
+<ul>
+<li>viewing route type</li>
+<li>changing the target node</li>
+<li>renaming a named route</li>
+<li>deleting the route</li>
+</ul>
+<p>The route inspector is also used during pending connection creation so that new
+connections do not rely on browser modal prompts.</p>
+<h2 id="toml-editing">TOML Editing</h2>
+<p>The right-side TOML panel is editable.</p>
+<p>Current behavior:</p>
+<ul>
+<li>graph changes regenerate the TOML</li>
+<li>TOML edits may be applied back into the graph</li>
+<li>applying TOML rebuilds the in-memory graph representation</li>
+</ul>
+<p>Supported schema elements include:</p>
+<ul>
+<li><code>workflow</code></li>
+<li><code>startNode</code></li>
+<li><code>[nodes.&lt;id&gt;]</code></li>
+<li><code>[continue]</code></li>
+<li><code>[routing.&lt;from&gt;.&lt;route&gt;]</code></li>
+</ul>
+<p>Node-level TOML fields currently relevant to the editor include:</p>
+<ul>
+<li><code>type</code></li>
+<li><code>label</code></li>
+<li><code>handler</code></li>
+<li><code>description</code></li>
+</ul>
+<p>If <code>label</code> is omitted, the editor falls back to the node id.</p>
+<h2 id="workflow-naming">Workflow Naming</h2>
+<p>The editor reads the workflow name from the root-level TOML field:</p>
+<pre><code class="language-toml">workflow = "policy-underwriting"
+</code></pre>
+<p>If no workflow name is present, the editor falls back to <code>unnamed</code>.</p>
+<h2 id="themes">Themes</h2>
+<p>The editor currently supports:</p>
+<ul>
+<li>light theme</li>
+<li>midnight theme</li>
+</ul>
+<p>Theme selection is available through the settings utility panel.</p>
+<h2 id="file-utilities">File Utilities</h2>
+<p>The current utility panel includes workflow file actions for:</p>
+<ul>
+<li>loading from TOML currently present in the editor</li>
+<li>downloading generated TOML</li>
+</ul>
+<p>These are local editor interactions rather than remote persistence features.</p>
+<h2 id="development-quickstart">Development Quickstart</h2>
+<p>From the repository root:</p>
+<pre><code class="language-bash">cd editor
+npm install
+npm run dev
+</code></pre>
+<p>The Vite dev server will print the local URL.</p>
+<h2 id="current-limitations">Current Limitations</h2>
+<p>The editor is intentionally still a prototype-quality authoring tool.</p>
+<p>Current limitations include:</p>
+<ul>
+<li>no backend persistence</li>
+<li>no multi-user collaboration</li>
+<li>no runtime execution trace view</li>
+<li>no validator integration pane yet</li>
+<li>no file system save/load outside browser-oriented utility flows</li>
+</ul>
+<h2 id="intended-direction">Intended Direction</h2>
+<p>The editor is meant to become the visual authoring surface for the broader
+Forerunner ecosystem:</p>
+<ul>
+<li>TOML workflow definitions</li>
+<li>future validator integration</li>
+<li>future CLI-driven workflow tooling</li>
+<li>eventual richer authoring and inspection workflows</li>
+</ul>
 
+        </div>
     </main>
 </div>
 </body>
