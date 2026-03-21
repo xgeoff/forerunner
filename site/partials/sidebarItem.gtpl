@@ -43,5 +43,5 @@ def icon = iconMap.get(originalName, '<svg viewBox="0 0 24 24"><circle cx="12" c
 </li>
 <% } else if (navItem.type == 'file') { %>
 <% def href = normalizedBase ? "${normalizedBase}/${navItem.path}.html" : "/${navItem.path}.html" %>
-<li class="file"><a href="${href}"><span class="nav-icon" aria-hidden="true">${icon}</span><span class="nav-label">${displayName}</span></a></li>
+<li class="file file-${originalName.toLowerCase().replace("_", "-")}"><a href="${href}"><span class="nav-icon" aria-hidden="true">${icon}</span><span class="nav-label">${displayName}</span></a></li>
 <% } %>
