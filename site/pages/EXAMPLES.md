@@ -4,7 +4,7 @@ Reusable TOML workflow examples.
 
 Canonical format:
 
-- `docs/SCHEMA.md`
+- `SCHEMA.md`
 
 Starter example:
 

@@ -1,0 +1,4 @@
+title = "Forerunner"
+baseUrl = "/forerunner"
+outputDir = "docs"
+sourceDir = "site"

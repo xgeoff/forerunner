@@ -5,7 +5,7 @@ parser/serializer logic for text-based workflow definitions.
 
 Canonical schema:
 
-- `docs/SCHEMA.md`
+- `SCHEMA.md`
 
 Current canonical routing keys:
 

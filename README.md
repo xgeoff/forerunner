@@ -81,16 +81,16 @@ Published Maven artifact:
 
 The text-based workflow format is defined in:
 
-- `docs/SCHEMA.md`
+- `docs/SCHEMA.html`
 
 Additional project documentation:
 
 - `docs/index.html`
-- `docs/PUBLISHING.md`
-- `docs/RELEASING.md`
-- `docs/DSL_TOML.md`
-- `docs/EDITOR.md`
-- `docs/EXAMPLES.md`
+- `private-docs/PUBLISHING.md`
+- `private-docs/RELEASING.md`
+- `docs/DSL_TOML.html`
+- `docs/EDITOR.html`
+- `docs/EXAMPLES.html`
 
 The canonical schema currently uses:
 

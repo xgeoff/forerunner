@@ -1,7 +1,19 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath("biz.digitalindustry:grimoire:0.3.0")
+    }
+}
+
 plugins {
     kotlin("jvm") version "2.0.21" apply false
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
 }
+
+apply(plugin = "biz.digitalindustry.grimoire")
 
 group = "biz.digitalindustry.workflow"
 version = "0.4.0"
