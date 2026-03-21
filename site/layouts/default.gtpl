@@ -22,9 +22,7 @@ def pageAuthor = binding.hasVariable('author') && author?.name ? author.name : '
 <div class="shell">
     ${partial('sidebar')}
     <main class="container prose">
-        <div class="content-shell">
 ${content}
-        </div>
     </main>
 </div>
 </body>

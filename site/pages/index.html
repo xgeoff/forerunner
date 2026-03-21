@@ -1,612 +1,314 @@
-<style>:root {
-      color-scheme: dark;
-      --bg: #071018;
-      --bg-elevated: rgba(16, 29, 40, 0.88);
-      --bg-panel: rgba(11, 21, 31, 0.94);
-      --line: rgba(142, 196, 255, 0.16);
-      --line-strong: rgba(142, 196, 255, 0.28);
-      --text: #ecf7ff;
-      --muted: #91a9bb;
-      --accent: #7bd7ff;
-      --accent-strong: #5ba8ff;
-      --success: #79f0c0;
-      --glow: 0 0 0 1px rgba(123, 215, 255, 0.12), 0 18px 60px rgba(20, 74, 118, 0.18);
-      --radius: 20px;
-      --radius-sm: 14px;
-      --max: 1180px;
+<style>
+  .landing {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .landing-hero {
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid rgba(123, 215, 255, 0.1);
+  }
+
+  .landing-eyebrow {
+    display: inline-block;
+    margin-bottom: 0.9rem;
+    color: #bcdff2;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .landing-title {
+    margin: 0 0 1rem;
+    max-width: 14ch;
+    font-size: clamp(2.8rem, 5vw, 4.8rem);
+    font-weight: 800;
+    line-height: 0.94;
+    letter-spacing: -0.05em;
+  }
+
+  .landing-lead {
+    max-width: 62rem;
+    margin: 0 0 1.3rem;
+    color: #c7d9e5;
+    font-size: 1.08rem;
+    line-height: 1.82;
+  }
+
+  .landing-actions,
+  .landing-grid,
+  .landing-modules,
+  .landing-links {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .landing-actions {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    margin-top: 1.25rem;
+  }
+
+  .landing-action,
+  .landing-note,
+  .landing-module,
+  .landing-link {
+    border: 1px solid rgba(123, 215, 255, 0.1);
+    background: rgba(8, 18, 27, 0.38);
+  }
+
+  .landing-action {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.95rem 1rem;
+    color: var(--site-text);
+    text-decoration: none;
+    transition: 160ms ease;
+  }
+
+  .landing-action:hover,
+  .landing-link:hover {
+    background: rgba(123, 215, 255, 0.06);
+    border-color: rgba(123, 215, 255, 0.16);
+  }
+
+  .landing-action small,
+  .landing-link span,
+  .landing-note p,
+  .landing-module p {
+    color: var(--site-muted);
+  }
+
+  .landing-section {
+    margin-top: 2.2rem;
+    padding-top: 0.4rem;
+  }
+
+  .landing-section h2 {
+    margin: 0 0 0.85rem;
+  }
+
+  .landing-grid {
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: start;
+  }
+
+  .landing-note,
+  .landing-module,
+  .landing-link {
+    padding: 1rem;
+  }
+
+  .landing-note strong {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.95rem;
+  }
+
+  .landing-note p,
+  .landing-module p,
+  .landing-link span {
+    margin: 0;
+    line-height: 1.7;
+  }
+
+  .landing-principles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid rgba(123, 215, 255, 0.08);
+  }
+
+  .landing-principles li {
+    padding: 0.95rem 0;
+    border-bottom: 1px solid rgba(123, 215, 255, 0.08);
+  }
+
+  .landing-principles strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: var(--site-text);
+  }
+
+  .landing-modules {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .landing-module h3,
+  .landing-link strong {
+    margin: 0 0 0.45rem;
+    font-size: 1rem;
+  }
+
+  .landing-module code {
+    font-size: 0.92em;
+  }
+
+  .landing-links {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .landing-link {
+    display: block;
+    color: var(--site-text);
+    text-decoration: none;
+  }
+
+  .landing-footer {
+    margin-top: 2.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(123, 215, 255, 0.08);
+    color: var(--site-muted);
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 900px) {
+    .landing-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .landing-title {
+      font-size: clamp(2.2rem, 11vw, 3rem);
     }
 
-    * {
-      box-sizing: border-box;
+    .landing-lead {
+      font-size: 1rem;
     }
+  }
+</style>
 
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(91, 168, 255, 0.16), transparent 28%),
-        radial-gradient(circle at top right, rgba(123, 215, 255, 0.1), transparent 22%),
-        linear-gradient(180deg, #09131d 0%, #071018 44%, #050b11 100%);
-      color: var(--text);
-    }
+<section class="landing">
+  <header class="landing-hero">
+    <div class="landing-eyebrow">Forerunner Documentation</div>
+    <h1 class="landing-title">Deterministic workflow execution for the JVM.</h1>
+    <p class="landing-lead">
+      Forerunner is a small workflow engine built around explicit graph execution,
+      immutable context flow, structured validation, and clear operational semantics.
+      It stays close to the metal: no frameworks, no reflection, and no runtime magic.
+    </p>
+    <div class="landing-actions">
+      <a class="landing-action" href="https://github.com/xgeoff/forerunner">
+        <strong>Repository overview</strong>
+        <small>README.md</small>
+      </a>
+      <a class="landing-action" href="SCHEMA.html">
+        <strong>Canonical schema</strong>
+        <small>SCHEMA</small>
+      </a>
+      <a class="landing-action" href="EDITOR.html">
+        <strong>Editor documentation</strong>
+        <small>EDITOR</small>
+      </a>
+    </div>
+  </header>
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(123, 215, 255, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(123, 215, 255, 0.05) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.15));
-      opacity: 0.35;
-    }
-
-    a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-
-    a:hover {
-      color: #b4ecff;
-    }
-
-    .page {
-      width: min(calc(100% - 40px), var(--max));
-      margin: 0 auto;
-      padding: 36px 0 72px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 28px;
-      background:
-        linear-gradient(145deg, rgba(15, 30, 43, 0.96), rgba(8, 18, 27, 0.94)),
-        linear-gradient(180deg, rgba(91, 168, 255, 0.06), transparent 50%);
-      box-shadow: var(--glow);
-      padding: 28px 28px 30px;
-      margin-bottom: 24px;
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      inset: -20% auto auto 65%;
-      width: 320px;
-      height: 320px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(123, 215, 255, 0.14), transparent 68%);
-      pointer-events: none;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--line-strong);
-      background: rgba(10, 21, 30, 0.78);
-      color: #b5def1;
-      font-size: 12px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1.5fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-
-    h1 {
-      margin: 0 0 14px;
-      font-size: clamp(2.6rem, 5vw, 4.4rem);
-      line-height: 0.95;
-      letter-spacing: -0.04em;
-      font-weight: 800;
-    }
-
-    .lead {
-      margin: 0;
-      max-width: 760px;
-      color: #bfd1de;
-      font-size: 1.06rem;
-      line-height: 1.75;
-    }
-
-    .hero-actions,
-    .link-grid,
-    .card-grid,
-    .module-grid,
-    .pill-list,
-    .quick-links {
-      display: grid;
-      gap: 14px;
-    }
-
-    .hero-actions {
-      margin-top: 22px;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    }
-
-    .button,
-    .doc-card,
-    .panel,
-    .module,
-    .signal {
-      border: 1px solid var(--line);
-      background: var(--bg-panel);
-      box-shadow: var(--glow);
-    }
-
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 16px;
-      border-radius: 16px;
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .button small {
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    .signal-stack {
-      display: grid;
-      gap: 14px;
-    }
-
-    .signal {
-      border-radius: 18px;
-      padding: 18px;
-      background: linear-gradient(180deg, rgba(10, 21, 31, 0.96), rgba(8, 16, 24, 0.94));
-    }
-
-    .signal-label {
-      color: var(--muted);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      margin-bottom: 10px;
-    }
-
-    .signal strong {
-      font-size: 1.05rem;
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    .signal p {
-      margin: 0;
-      color: #b8cad6;
-      line-height: 1.65;
-    }
-
-    .section {
-      margin-top: 22px;
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      padding: 24px;
-      background: rgba(8, 18, 27, 0.86);
-      box-shadow: var(--glow);
-    }
-
-    h2 {
-      margin: 0 0 12px;
-      font-size: 1.55rem;
-      letter-spacing: -0.02em;
-    }
-
-    .section > p,
-    .section-intro {
-      margin: 0 0 18px;
-      color: #b8cad6;
-      line-height: 1.7;
-    }
-
-    .pill-list {
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
-
-    .pill {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px 16px;
-      background: rgba(10, 22, 32, 0.78);
-      color: #d4ecf8;
-      line-height: 1.55;
-    }
-
-    .pill strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.95rem;
-    }
-
-    .card-grid,
-    .module-grid,
-    .link-grid {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    }
-
-    .doc-card,
-    .module,
-    .panel {
-      border-radius: var(--radius);
-      padding: 18px;
-    }
-
-    .doc-card h3,
-    .module h3,
-    .panel h3 {
-      margin: 0 0 8px;
-      font-size: 1.02rem;
-      letter-spacing: -0.01em;
-    }
-
-    .doc-card p,
-    .module p,
-    .panel p,
-    .module li,
-    .panel li {
-      margin: 0;
-      color: #b4c7d4;
-      line-height: 1.65;
-    }
-
-    .doc-card .meta,
-    .module .meta {
-      margin-top: 12px;
-      color: var(--accent);
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-
-    .module ul,
-    .panel ul {
-      margin: 12px 0 0;
-      padding-left: 18px;
-    }
-
-    .two-up {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 18px;
-    }
-
-    .code {
-      margin: 14px 0 0;
-      padding: 16px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--line);
-      background: rgba(5, 12, 18, 0.96);
-      color: #d9f5ff;
-      font-family: "SFMono-Regular", SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.92rem;
-      line-height: 1.6;
-      overflow: auto;
-      white-space: pre;
-    }
-
-    .footer {
-      margin-top: 22px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 0.94rem;
-    }
-
-    .quick-links {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      margin-top: 14px;
-    }
-
-    .quick-link {
-      display: block;
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: rgba(8, 18, 27, 0.72);
-      color: var(--text);
-      box-shadow: var(--glow);
-    }
-
-    .quick-link span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-top: 6px;
-    }
-
-    @media (max-width: 960px) {
-      .hero-grid,
-      .two-up {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 720px) {
-      .page {
-        width: min(calc(100% - 24px), var(--max));
-        padding-top: 20px;
-        padding-bottom: 40px;
-      }
-
-      .hero,
-      .section {
-        padding: 18px;
-      }
-
-      h1 {
-        font-size: 2.5rem;
-      }
-    }</style>
-
-<div class="page">
-    <section class="hero">
-      <div class="eyebrow">Forerunner Documentation</div>
-      <div class="hero-grid">
-        <div>
-          <h1>Deterministic workflow execution for the JVM.</h1>
-          <p class="lead">
-            Forerunner is a small workflow engine built around explicit graph execution,
-            immutable context flow, structured validation, and clear operational semantics.
-            It stays close to the metal: no frameworks, no reflection, and no runtime magic.
-          </p>
-          <div class="hero-actions">
-            <a class="button" href="https://github.com/xgeoff/forerunner">
-              <span>Read the root overview</span>
-              <small>README.md</small>
-            </a>
-            <a class="button" href="SCHEMA.html">
-              <span>Open the canonical TOML schema</span>
-              <small>SCHEMA.md</small>
-            </a>
-            <a class="button" href="EDITOR.html">
-              <span>Review the editor notes</span>
-              <small>EDITOR.md</small>
-            </a>
-          </div>
-        </div>
-        <div class="signal-stack">
-          <article class="signal">
-            <div class="signal-label">Core Execution Model</div>
-            <strong>Node → NodeOutcome → Workflow → WorkflowEngine → ExecutionResult</strong>
-            <p>
-              Workflows are directed graphs. Nodes transform context, the engine routes
-              deterministically, and execution ends in a strongly typed result.
-            </p>
-          </article>
-          <article class="signal">
-            <div class="signal-label">Design Objectives</div>
-            <p>
-              Forerunner separates node behavior, graph topology, and execution policy
-              into independent concerns. That keeps the runtime predictable and the
-              surrounding tooling modular.
-            </p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>What Forerunner Is</h2>
-      <p class="section-intro">
-        Forerunner is designed for workflows that need clear control flow, explicit
-        branching, validation accumulation, and reliable execution semantics. It is
-        intentionally small. The goal is not to hide behavior. The goal is to make
-        workflow behavior obvious.
-      </p>
-      <div class="pill-list">
-        <div class="pill">
-          <strong>Immutable Context Propagation</strong>
-          Context moves through the graph as a value. Nodes read it, transform it,
-          and return the next context state explicitly.
-        </div>
-        <div class="pill">
-          <strong>Explicit Routing</strong>
-          `Continue`, `Next`, `Stop`, and `Fatal` make control flow visible both in code
-          and in the editor.
-        </div>
-        <div class="pill">
-          <strong>Structured Violations</strong>
-          Validation issues accumulate as `Violation` values with `WARNING` or `ERROR`
-          severity instead of disappearing into side effects.
-        </div>
-        <div class="pill">
-          <strong>Deterministic Execution</strong>
-          The engine walks the graph predictably. There is no reflection-based dispatch,
-          hidden container state, or implicit runtime routing.
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>Repository Modules</h2>
-      <p class="section-intro">
-        The repository is a small ecosystem around the core engine: a JVM library, a
-        TOML definition layer, future validation and CLI tooling, and a separate web editor.
-      </p>
-      <div class="module-grid">
-        <article class="module">
-          <h3><code>core</code></h3>
-          <p>
-            The published library. It contains the workflow model, the Kotlin builder API,
-            and the runtime engine, including `Node`, `Workflow`, `FlowBuilder`,
-            `WorkflowEngine`, `Violation`, and `ExecutionResult`.
-          </p>
-          <div class="meta">Published artifact: <code>biz.digitalindustry.workflow:forerunner</code></div>
-        </article>
-        <article class="module">
-          <h3><code>dsl-toml</code></h3>
-          <p>
-            The canonical text-based workflow definition layer. This module owns the TOML
-            schema and the mapping/parsing support around it.
-          </p>
-        </article>
-        <article class="module">
-          <h3><code>validator</code></h3>
-          <p>
-            Reserved Kotlin/JVM module for future structural and semantic validation.
-            One intended use case is CLI-driven validation of workflow definitions.
-          </p>
-        </article>
-        <article class="module">
-          <h3><code>cli</code></h3>
-          <p>
-            Reserved command-line tooling module for inspection, validation, and execution-oriented
-            workflow utilities.
-          </p>
-        </article>
-        <article class="module">
-          <h3><code>editor</code></h3>
-          <p>
-            A web-based workflow editor built as a separate Node/Vite project. Atomica powers
-            the UI/state layer, while Skeleton CSS and Skeleton-plus provide layout and styling.
-          </p>
-        </article>
-        <article class="module">
-          <h3><code>examples/workflows</code></h3>
-          <p>
-            Example TOML workflow definitions used as references for schema evolution,
-            editor behavior, and future tooling.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>Execution Semantics</h2>
-      <div class="two-up">
-        <article class="panel">
-          <h3>Core Runtime</h3>
-          <p>
-            A workflow is a directed graph with a `startNode`, a node map, and default
-            `continueTo` routing inside the runtime model. Nodes return a `NodeOutcome`
-            that determines how execution proceeds.
-          </p>
-          <ul>
-            <li><code>Continue</code> follows default continue routing.</li>
-            <li><code>Next</code> jumps directly to a named node.</li>
-            <li><code>Stop</code> completes execution successfully.</li>
-            <li><code>Fatal</code> terminates execution with an error.</li>
-          </ul>
-        </article>
-        <article class="panel">
-          <h3>Validation and Results</h3>
-          <p>
-            Violations accumulate as execution proceeds. The engine can either carry them
-            through to completion or stop early when configured with fail-fast behavior.
-          </p>
-          <ul>
-            <li><code>Completed</code> returns final context and violations.</li>
-            <li><code>ValidationFailed</code> returns context plus accumulated violations.</li>
-            <li><code>Fatal</code> returns context, error, and collected violations.</li>
-          </ul>
-        </article>
-      </div>
-      <div class="code">val engine = WorkflowEngine()
-val result = engine.execute(workflow, initialContext)</div>
-    </section>
-
-    <section class="section">
-      <h2>TOML Workflow Definitions</h2>
-      <p class="section-intro">
-        Forerunner also has a canonical TOML DSL for text-based workflow definitions.
-        The text schema intentionally uses <code>continue</code> for fallback routing and
-        <code>routing</code> for named branch routing.
-      </p>
-      <div class="code">workflow = "policy-underwriting"
-startNode = "validate"
-
-[nodes.validate]
-label = "Validate Policy"
-handler = "tenant.policy.validate"
-
-[nodes.finalize]
-type = "end"
-label = "Finalize"
-
-[continue]
-validate = "finalize"
-
-[routing.validate.highRisk]
-to = "manualReview"</div>
-      <div class="quick-links">
-        <a class="quick-link" href="SCHEMA.html">
-          Canonical schema
-          <span>Field definitions, validation rules, and canonical structure.</span>
-        </a>
-        <a class="quick-link" href="DSL_TOML.html">
-          TOML DSL notes
-          <span>High-level orientation for the text-based workflow definition layer.</span>
-        </a>
-        <a class="quick-link" href="EXAMPLES.html">
-          Examples
-          <span>Reference workflows and example TOML definitions.</span>
-        </a>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>Web Editor</h2>
-      <p class="section-intro">
-        The editor is a separate web tool for visually building workflows and editing the
-        TOML side-by-side. It is intended to make graph structure, routing, and configuration
-        easier to inspect without changing the underlying model.
-      </p>
-      <div class="card-grid">
-        <article class="doc-card">
-          <h3>Visual graph editing</h3>
-          <p>
-            Create nodes, route between them, rearrange graph layout, and inspect node or
-            route details in a dedicated side inspector.
-          </p>
-        </article>
-        <article class="doc-card">
-          <h3>TOML-aware workflow editing</h3>
-          <p>
-            Edit workflow TOML directly and keep the visual representation aligned with the
-            canonical text schema.
-          </p>
-        </article>
-        <article class="doc-card">
-          <h3>Implementation stack</h3>
-          <p>
-            Atomica provides the UI/state model. Skeleton CSS and Skeleton-plus define the
-            visual shell and component styling.
-          </p>
-        </article>
-      </div>
-      <div class="quick-links">
-        <a class="quick-link" href="EDITOR.html">
-          Editor notes
-          <span>Current editor documentation and project-specific notes.</span>
-        </a>
-      </div>
-    </section>
-
-    
-
-    <footer class="footer">
-      <div>Forerunner documentation portal</div>
+  <section class="landing-section">
+    <div class="landing-grid">
       <div>
-        More detail lives in <a href="https://github.com/xgeoff/forerunner">README.md</a> and the linked docs in this folder.
+        <h2>What Forerunner Is</h2>
+        <ul class="landing-principles">
+          <li>
+            <strong>Immutable Context Propagation</strong>
+            Context moves through the graph as a value. Nodes read it, transform it,
+            and return the next context state explicitly.
+          </li>
+          <li>
+            <strong>Explicit Routing</strong>
+            <code>Continue</code>, <code>Next</code>, <code>Stop</code>, and <code>Fatal</code>
+            keep workflow control flow visible in both code and tooling.
+          </li>
+          <li>
+            <strong>Structured Violations</strong>
+            Validation issues accumulate as values with <code>WARNING</code> and
+            <code>ERROR</code> severity instead of hiding inside side effects.
+          </li>
+          <li>
+            <strong>Deterministic Execution</strong>
+            The engine walks a graph predictably. There is no reflection-based dispatch,
+            hidden container behavior, or implicit runtime routing.
+          </li>
+        </ul>
       </div>
-    </footer>
-  </div>
+      <div class="landing-note">
+        <strong>Core Execution Model</strong>
+        <p><code>Node → NodeOutcome → Workflow → WorkflowEngine → ExecutionResult</code></p>
+        <p style="margin-top:0.8rem;">
+          Forerunner separates node behavior, graph topology, and execution policy into
+          independent concerns. That keeps the runtime predictable and the surrounding
+          tooling modular.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-section">
+    <h2>Repository Modules</h2>
+    <div class="landing-modules">
+      <article class="landing-module">
+        <h3><code>core</code></h3>
+        <p>
+          The published library. It contains the workflow model, Kotlin builder API,
+          and runtime engine.
+        </p>
+      </article>
+      <article class="landing-module">
+        <h3><code>dsl-toml</code></h3>
+        <p>
+          The canonical text-based workflow definition layer and TOML mapping support.
+        </p>
+      </article>
+      <article class="landing-module">
+        <h3><code>validator</code></h3>
+        <p>
+          Reserved Kotlin/JVM module for future structural and semantic validation.
+        </p>
+      </article>
+      <article class="landing-module">
+        <h3><code>cli</code></h3>
+        <p>
+          Reserved command-line tooling module for validation, inspection, and helpers.
+        </p>
+      </article>
+      <article class="landing-module">
+        <h3><code>editor</code></h3>
+        <p>
+          Web-based workflow editor built with Atomica and styled with Skeleton CSS plus Skeleton-plus.
+        </p>
+      </article>
+      <article class="landing-module">
+        <h3><code>examples/workflows</code></h3>
+        <p>
+          Example TOML workflow definitions used as references and future test fixtures.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="landing-section">
+    <h2>TOML and Tooling</h2>
+    <div class="landing-links">
+      <a class="landing-link" href="SCHEMA.html">
+        <strong>Schema</strong>
+        <span>Field definitions, validation rules, and canonical structure.</span>
+      </a>
+      <a class="landing-link" href="DSL_TOML.html">
+        <strong>TOML DSL</strong>
+        <span>How the text-based workflow format relates to the runtime and tools.</span>
+      </a>
+      <a class="landing-link" href="EXAMPLES.html">
+        <strong>Examples</strong>
+        <span>Reference workflows and guidance on what makes a good example.</span>
+      </a>
+      <a class="landing-link" href="EDITOR.html">
+        <strong>Editor</strong>
+        <span>Visual editing model, TOML round-tripping, and current editor capabilities.</span>
+      </a>
+    </div>
+  </section>
+
+  <footer class="landing-footer">
+    More detailed implementation notes live in the repository README and the linked pages in this documentation set.
+  </footer>
+</section>
