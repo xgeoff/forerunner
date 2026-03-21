@@ -329,18 +329,25 @@ main.container {
   }
 
   .sidebar-nav li {
-    display: flex;
-    align-items: center;
+    display: block;
     margin-top: 0;
   }
 
   .sidebar .file a {
-    display: inline-flex;
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
     align-items: center;
-    gap: 0.55rem;
+    column-gap: 0.55rem;
     width: auto;
     padding: 0.35rem 0;
     border-bottom: 0;
+    line-height: 1;
+  }
+
+  .sidebar .file a .nav-label {
+    display: inline-block;
+    line-height: 1;
   }
 
   main.container {
