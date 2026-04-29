@@ -198,11 +198,11 @@ to = "&lt;targetNodeId&gt;"
 <li>duplicate node ids are invalid</li>
 </ul>
 <h2 id="tooling-expectations">Tooling Expectations</h2>
-<p>The current Forerunner tooling expects:</p>
+<p>Current tooling uses the following fallback behavior:</p>
 <ul>
-<li>omitted <code>workflow</code> =&gt; <code>unnamed</code></li>
-<li>omitted node <code>type</code> =&gt; <code>task</code></li>
-<li>omitted <code>label</code> =&gt; node id may be used for display</li>
+<li>If <code>workflow</code> is omitted, the workflow name is treated as <code>unnamed</code>.</li>
+<li>If node <code>type</code> is omitted, the node is treated as a <code>task</code>.</li>
+<li>If <code>label</code> is omitted, tooling may use the node id for display.</li>
 </ul>
 <h2 id="mapping-to-runtime">Mapping to Runtime</h2>
 <p>The TOML schema is not the runtime type model itself.</p>

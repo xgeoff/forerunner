@@ -158,11 +158,11 @@ The current canonical validation rules are:
 
 ## Tooling Expectations
 
-The current Forerunner tooling expects:
+Current tooling uses the following fallback behavior:
 
-- omitted `workflow` => `unnamed`
-- omitted node `type` => `task`
-- omitted `label` => node id may be used for display
+- If `workflow` is omitted, the workflow name is treated as `unnamed`.
+- If node `type` is omitted, the node is treated as a `task`.
+- If `label` is omitted, tooling may use the node id for display.
 
 ## Mapping to Runtime
 
